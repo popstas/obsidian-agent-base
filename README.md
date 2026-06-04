@@ -14,7 +14,7 @@ skills and **adapts them to you** instead of leaving the template placeholders:
 > adaptation flow: ask me which setup level I want — **required** (~2–3 min: project
 > name + vault layout) or **detailed** (~10–15 min) — interview me one question at a time
 > with sensible defaults, and edit the copied templates to match my answers so no template
-> placeholders remain (e.g. `Platform/`, `Companies/`, `Planfix`). Show me a diff at the end.
+> placeholders remain (e.g. `Platform/`, `Companies/`, `CRM`). Show me a diff at the end.
 
 ## Структура
 
@@ -44,7 +44,7 @@ cp -r skills/* /path/to/your-project/.claude/skills/
 
 Скиллы самодостаточны (один `SKILL.md`, без скриптов). Они ссылаются друг на друга по имени (`[[new-task]]`, `[[worklog]]` и т.п.); ставь их вместе, чтобы ссылки были осмысленны.
 
-**Не копируй вслепую — это шаблоны.** В скиллах зашиты примеры (доменные папки, направления отчёта, трекер) и дефолты под абстрактный vault. После `cp` попроси агента прогнать [`INTEGRATION.md`](INTEGRATION.md): он спросит, какой уровень настройки нужен (обязательный ~2–3 мин / подробный ~10–15 мин), задаст вопросы и подстроит скопированные шаблоны под тебя — вместо того чтобы оставить чужие `Platform/` и `Planfix`.
+**Не копируй вслепую — это шаблоны.** В скиллах зашиты примеры (доменные папки, направления отчёта, трекер) и дефолты под абстрактный vault. После `cp` попроси агента прогнать [`INTEGRATION.md`](INTEGRATION.md): он спросит, какой уровень настройки нужен (обязательный ~2–3 мин / подробный ~10–15 мин), задаст вопросы и подстроит скопированные шаблоны под тебя — вместо того чтобы оставить чужие `Platform/` и `CRM`.
 
 ## Как подключить статус задач (tasks.json)
 
