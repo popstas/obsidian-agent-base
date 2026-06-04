@@ -262,7 +262,7 @@ find . -iname "<target>.md"
 
 ## Связанные скиллы
 
-- `[[add-task]]` / `[[close-task]]` — открыть/закрыть задачу в `tasks.md`.
+- `[[new-task]]` / `[[close-task]]` — открыть/закрыть задачу в `tasks.md`.
 - `[[list-tasks]]` — утренний обзор открытых задач.
 - `[[worklog]]` — запись хода работы в `Log/YYYY-MM-DD.md`.
 - `[[weekly-report]]` — еженедельный отчёт в `Log/Reports/`.
