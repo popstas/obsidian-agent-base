@@ -26,10 +26,15 @@ skills/                  скиллы Claude Code (по одному SKILL.md н
   list-tasks/            утренний обзор открытых задач, поиск старых
   worklog/               запись хода работы в Log/YYYY-MM-DD.md
   weekly-report/         еженедельный отчёт в Log/Reports/ (1 док/неделю, пн–вс)
+  decompose/             разбить задачи на подзадачи (AUTO / NEEDS-INPUT / RISKY)
+  learn/                 точечно улучшить скилл по опыту переписки
+  first-task-do/         взять первую задачу и начать с read-only исследования
   obsidian-vault/        конвенции vault: таксономия, wikilinks, sensitivity
-.claude/                 статус задач через tasks.json
+  base-sync/             синхронизация наследника с base: diff, сводка, подтянуть/продвинуть
+.claude/                 статус задач + синхронизация с base
   gen-tasks-json.cjs     парсит tasks.md → files/tasks.json (total/done/open)
   statusline.cjs         статус-строка: 📋 done/total │ N open │ %
+  sync-base.cjs          хэши/классификация/diff скиллов наследника vs base
   hooks/tasks-startup.sh SessionStart: подсказка посмотреть tasks.md и лог дня
   settings.json          проводка statusLine + хуков (мерджить, не перезаписывать)
 ```
@@ -58,6 +63,16 @@ cp -r skills/* /path/to/your-project/.claude/skills/
 3. Готово: при записи в `tasks.md` и на старте сессии пересчитывается `files/tasks.json`, а статус-строка показывает прогресс.
 
 Что считается: верхнеуровневые чекбоксы `- [ ]` / `- [x]` в `tasks.md`. `done` — закрытые `- [x]`, `total` — все, `open = total - done`. Подпункты с отступом не учитываются. Зависимости: Node.js; для PostToolUse-хука — `jq`.
+
+## Синхронизация с base после форка (skills-lock.json v2)
+
+После того как наследник адаптировал скиллы под себя, base продолжает развиваться. Чтобы подтягивать обновления, не затирая локальные кастомизации, есть скрипт `sync-base.cjs` и скилл `base-sync`.
+
+1. Скопируй `.claude/sync-base.cjs` и скилл `base-sync/` в наследника.
+2. Один раз заведи точку отсчёта: `node .claude/sync-base.cjs bootstrap`. Он добавит блок `baseSync` в `skills-lock.json` (формат v2), сопоставит локальные имена скиллов с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`) и пометит уже разошедшиеся скиллы `customized: true`. Путь к чекауту base берётся из `baseSync.base.path` (по умолчанию `../../obsidian-agent-base`).
+3. Дальше по запросу: `node .claude/sync-base.cjs status` — таблица состояний (UNCHANGED / BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE), `diff <skill>` — различия, `stamp <skill>` — зафиксировать синхронизацию после ручного merge.
+
+`skills-lock.json` v2 совместим с v1: прежние записи внешних github-скиллов (`skills`) не трогаются, добавляется отдельный блок `baseSync`. Хэш скилла считается без строк `name:`/`description:` во frontmatter — они легитимно различаются у наследников и не создают ложных расхождений. Разговорную часть (что подтянуть, что оставить, как продвинуть улучшение обратно в base) ведёт скилл `base-sync`; скрипт сам файлы скиллов не редактирует.
 
 ## Формат задач (tasks.md)
 
