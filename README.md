@@ -1,6 +1,8 @@
 # obsidian-agent-base
 
-Обезличенное ядро рабочего процесса для ведения Obsidian-vault с агентом — **любым** (Claude Code, Codex, Hermes, OpenClaw, Antigravity и др.): задачи в `tasks.md`, дневник в `Log/`, заметки в `Notes/`, еженедельные отчёты в `Log/Reports/`. Переиспользуемые скиллы и скрипты без привязки к конкретному проекту, людям и инструментам.
+🇬🇧 English · 🇷🇺 [Русский](README_ru.md)
+
+A depersonalized core workflow for keeping an Obsidian vault with an agent — **any** agent (Claude Code, Codex, Hermes, OpenClaw, Antigravity, etc.): tasks in `tasks.md`, a journal in `Log/`, notes in `Notes/`, weekly reports in `Log/Reports/`. Reusable skills and scripts with no ties to a specific project, people, or tools.
 
 ## Integration prompt (copy-paste to your agent)
 
@@ -16,77 +18,77 @@ skills and **adapts them to you** instead of leaving the template placeholders:
 > with sensible defaults, and edit the copied templates to match my answers so no template
 > placeholders remain (e.g. `Platform/`, `Companies/`, `CRM`). Show me a diff at the end.
 
-## Структура
+## Structure
 
 ```
-INTEGRATION.md           инструкция агенту: как адаптировать скиллы под пользователя
-skills/                  скиллы агента (по одному SKILL.md на скилл)
-  new-task/              добавить задачу в tasks.md (➕ YYYY-MM-DD)
-  close-task/            закрыть задачу (✅) + запись в дневной лог
-  list-tasks/            утренний обзор открытых задач, поиск старых
-  worklog/               запись хода работы в Log/YYYY-MM-DD.md
-  weekly-report/         еженедельный отчёт в Log/Reports/ (1 док/неделю, пн–вс)
-  decompose/             разбить задачи на подзадачи (AUTO / NEEDS-INPUT / RISKY)
-  learn/                 точечно улучшить скилл по опыту переписки
-  first-task-do/         взять первую задачу и начать с read-only исследования
-  obsidian-vault/        конвенции vault: таксономия, wikilinks, sensitivity
-  base-sync/             синхронизация наследника с base: diff, сводка, подтянуть/продвинуть
-.claude/                 статус задач + синхронизация с base
-  gen-tasks-json.cjs     парсит tasks.md → files/tasks.json (total/done/open)
-  statusline.cjs         статус-строка: 📋 done/total │ N open │ %
-  sync-base.cjs          хэши/классификация/diff скиллов наследника vs base
-  hooks/tasks-startup.sh SessionStart: подсказка посмотреть tasks.md и лог дня
-  settings.json          проводка statusLine + хуков (мерджить, не перезаписывать)
+INTEGRATION.md           guide for the agent: how to adapt the skills to the user
+skills/                  agent skills (one SKILL.md per skill)
+  new-task/              add a task to tasks.md (➕ YYYY-MM-DD)
+  close-task/            close a task (✅) + write to the daily log
+  list-tasks/            morning review of open tasks, find stale ones
+  worklog/               log work progress in Log/YYYY-MM-DD.md
+  weekly-report/         weekly report in Log/Reports/ (1 doc/week, Mon–Sun)
+  decompose/             break tasks into subtasks (AUTO / NEEDS-INPUT / RISKY)
+  learn/                 surgically improve a skill from conversation experience
+  first-task-do/         pick the first task and start with read-only research
+  obsidian-vault/        vault conventions: taxonomy, wikilinks, sensitivity
+  base-sync/             sync a fork with base: diff, summary, pull/push changes
+.claude/                 task status + sync with base
+  gen-tasks-json.cjs     parses tasks.md → files/tasks.json (total/done/open)
+  statusline.cjs         status line: 📋 done/total │ N open │ %
+  sync-base.cjs          hashes/classification/diff of fork skills vs base
+  hooks/tasks-startup.sh SessionStart: hint to check tasks.md and the day's log
+  settings.json          wiring for statusLine + hooks (merge, don't overwrite)
 ```
 
-## Как подключить скиллы
+## How to install the skills
 
-Скопируй нужные папки скиллов в `.claude/skills/` своего проекта:
+Copy the skill folders you need into your project's `.claude/skills/`:
 
 ```bash
 cp -r skills/* /path/to/your-project/.claude/skills/
 ```
 
-Скиллы самодостаточны (один `SKILL.md`, без скриптов). Они ссылаются друг на друга по имени (`[[new-task]]`, `[[worklog]]` и т.п.); ставь их вместе, чтобы ссылки были осмысленны.
+The skills are self-contained (a single `SKILL.md`, no scripts). They reference each other by name (`[[new-task]]`, `[[worklog]]`, etc.); install them together so the links make sense.
 
-**Не копируй вслепую — это шаблоны.** В скиллах зашиты примеры (доменные папки, направления отчёта, трекер) и дефолты под абстрактный vault. После `cp` попроси агента прогнать [`INTEGRATION.md`](INTEGRATION.md): он спросит, какой уровень настройки нужен (обязательный ~2–3 мин / подробный ~10–15 мин), задаст вопросы и подстроит скопированные шаблоны под тебя — вместо того чтобы оставить чужие `Platform/` и `CRM`.
+**Don't copy them blindly — they are templates.** The skills bake in examples (domain folders, report dimensions, a tracker) and defaults for an abstract vault. After `cp`, ask your agent to run [`INTEGRATION.md`](INTEGRATION.md): it asks which setup level you want (required ~2–3 min / detailed ~10–15 min), interviews you, and tailors the copied templates to you — instead of leaving someone else's `Platform/` and `CRM` behind.
 
-## Как подключить статус задач (tasks.json)
+## How to install the task status (tasks.json)
 
-1. Скопируй скрипты и хук:
+1. Copy the scripts and the hook:
    ```bash
    cp .claude/gen-tasks-json.cjs .claude/statusline.cjs /path/to/your-project/.claude/
    mkdir -p /path/to/your-project/.claude/hooks
    cp .claude/hooks/tasks-startup.sh /path/to/your-project/.claude/hooks/
    ```
-2. **Смерджи** содержимое `.claude/settings.json` в `.claude/settings.json` своего проекта (не перезаписывай — добавь `statusLine` и блоки `hooks`).
-3. Готово: при записи в `tasks.md` и на старте сессии пересчитывается `files/tasks.json`, а статус-строка показывает прогресс.
+2. **Merge** the contents of `.claude/settings.json` into your project's `.claude/settings.json` (don't overwrite — add the `statusLine` and `hooks` blocks).
+3. Done: on writes to `tasks.md` and at session start, `files/tasks.json` is recomputed and the status line shows progress.
 
-Что считается: верхнеуровневые чекбоксы `- [ ]` / `- [x]` в `tasks.md`. `done` — закрытые `- [x]`, `total` — все, `open = total - done`. Подпункты с отступом не учитываются. Зависимости: Node.js; для PostToolUse-хука — `jq`.
+What counts: top-level checkboxes `- [ ]` / `- [x]` in `tasks.md`. `done` — closed `- [x]`, `total` — all, `open = total - done`. Indented sub-items are not counted. Dependencies: Node.js; for the PostToolUse hook — `jq`.
 
-## Синхронизация с base после форка (skills-lock.json v2)
+## Syncing with base after a fork (skills-lock.json v2)
 
-После того как наследник адаптировал скиллы под себя, base продолжает развиваться. Чтобы подтягивать обновления, не затирая локальные кастомизации, есть скрипт `sync-base.cjs` и скилл `base-sync`.
+After a fork has adapted the skills to itself, base keeps evolving. To pull updates without clobbering local customizations, there is a `sync-base.cjs` script and a `base-sync` skill.
 
-1. Скопируй `.claude/sync-base.cjs` и скилл `base-sync/` в наследника.
-2. Один раз заведи точку отсчёта: `node .claude/sync-base.cjs bootstrap`. Он добавит блок `baseSync` в `skills-lock.json` (формат v2), сопоставит локальные имена скиллов с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`) и пометит уже разошедшиеся скиллы `customized: true`. Путь к чекауту base берётся из `baseSync.base.path` (по умолчанию `../../obsidian-agent-base`).
-3. Дальше по запросу: `node .claude/sync-base.cjs status` — таблица состояний (UNCHANGED / BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE), `diff <skill>` — различия, `stamp <skill>` — зафиксировать синхронизацию после ручного merge.
+1. Copy `.claude/sync-base.cjs` and the `base-sync/` skill into the fork.
+2. Establish a baseline once: `node .claude/sync-base.cjs bootstrap`. It adds a `baseSync` block to `skills-lock.json` (format v2), maps local skill names to base via aliases (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), and marks already-diverged skills `customized: true`. The path to the base checkout is read from `baseSync.base.path` (default `../../obsidian-agent-base`).
+3. Then on demand: `node .claude/sync-base.cjs status` — a table of states (UNCHANGED / BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE), `diff <skill>` — the differences, `stamp <skill>` — record the sync after a manual merge.
 
-`skills-lock.json` v2 совместим с v1: прежние записи внешних github-скиллов (`skills`) не трогаются, добавляется отдельный блок `baseSync`. Хэш скилла считается без строк `name:`/`description:` во frontmatter — они легитимно различаются у наследников и не создают ложных расхождений. Разговорную часть (что подтянуть, что оставить, как продвинуть улучшение обратно в base) ведёт скилл `base-sync`; скрипт сам файлы скиллов не редактирует.
+`skills-lock.json` v2 is compatible with v1: existing entries for external GitHub skills (`skills`) are left untouched; a separate `baseSync` block is added. A skill's hash is computed without the `name:`/`description:` lines in the frontmatter — they legitimately differ across forks and shouldn't create false mismatches. The conversational part (what to pull, what to keep, how to push an improvement back to base) is handled by the `base-sync` skill; the script itself never edits skill files.
 
-## Формат задач (tasks.md)
+## Task format (tasks.md)
 
 ```md
 # Week:
-- [x] Завершённая задача ➕ 2026-06-01 ✅ 2026-06-03
-- [ ] Открытая задача этой недели ➕ 2026-06-04
+- [x] Completed task ➕ 2026-06-01 ✅ 2026-06-03
+- [ ] Open task this week ➕ 2026-06-04
 	- https://example.com/task/12345
-	- [ ] подзадача
+	- [ ] subtask
 
 # Week+
-- [ ] Задача на неделю+ ➕ 2026-06-02
+- [ ] Longer-horizon task ➕ 2026-06-02
 
-> Активные задачи. Будущие: [[tasks-future]].
+> Active tasks. Future ones: [[tasks-future]].
 ```
 
-`➕ YYYY-MM-DD` — дата создания, `✅ YYYY-MM-DD` — дата закрытия. Подбуллеты — табом. Файл разбит на две секции: `# Week:` — текущая неделя (вверху держатся завершённые `- [x]`, ниже открытые), `# Week+` — более долгий горизонт. Строка-легенда под `# Week+` ссылается на бэклог `tasks-future.md`.
+`➕ YYYY-MM-DD` — creation date, `✅ YYYY-MM-DD` — completion date. Sub-bullets use a tab. The file is split into two sections: `# Week:` — the current week (completed `- [x]` stay at the top, open ones below), `# Week+` — a longer horizon. The legend line under `# Week+` links to the `tasks-future.md` backlog.
