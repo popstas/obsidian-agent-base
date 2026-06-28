@@ -1,10 +1,10 @@
 # obsidian-agent-base
 
-Обезличенное ядро рабочего процесса для ведения Obsidian-vault с агентом (Claude Code): задачи в `tasks.md`, дневник в `Log/`, заметки в `Notes/`, еженедельные отчёты в `Log/Reports/`. Переиспользуемые скиллы и скрипты без привязки к конкретному проекту, людям и инструментам.
+Обезличенное ядро рабочего процесса для ведения Obsidian-vault с агентом — **любым** (Claude Code, Codex, Hermes, OpenClaw, Antigravity и др.): задачи в `tasks.md`, дневник в `Log/`, заметки в `Notes/`, еженедельные отчёты в `Log/Reports/`. Переиспользуемые скиллы и скрипты без привязки к конкретному проекту, людям и инструментам.
 
-## Integration prompt (copy-paste to Claude Code)
+## Integration prompt (copy-paste to your agent)
 
-Paste this into Claude Code from inside your own Obsidian vault / project. It installs the
+Paste this into your agent from inside your own Obsidian vault / project. It installs the
 skills and **adapts them to you** instead of leaving the template placeholders:
 
 > Install the Obsidian-vault skills from https://github.com/popstas/obsidian-agent-base:
@@ -20,7 +20,7 @@ skills and **adapts them to you** instead of leaving the template placeholders:
 
 ```
 INTEGRATION.md           инструкция агенту: как адаптировать скиллы под пользователя
-skills/                  скиллы Claude Code (по одному SKILL.md на скилл)
+skills/                  скиллы агента (по одному SKILL.md на скилл)
   new-task/              добавить задачу в tasks.md (➕ YYYY-MM-DD)
   close-task/            закрыть задачу (✅) + запись в дневной лог
   list-tasks/            утренний обзор открытых задач, поиск старых
