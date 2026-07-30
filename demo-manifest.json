@@ -21,15 +21,15 @@
   "setupDocs": [
     {
       "path": "README.md",
-      "sha256": "4f29e4c301421a23eaaff24b5afb513d2c6f6cb79d12ef5db742423664b17140"
+      "sha256": "1d6dafae8793f08ea542c48ff9b1e8c1946cfbf31f9570e737433f6ca957094d"
     },
     {
       "path": "README_ru.md",
-      "sha256": "59b7c231e222218a4ceb570d007d4f6ee374a4433b2d3968aa9db4de02028f8d"
+      "sha256": "d3304de56dc520b95e7c0ac7326d5b9d90983687b08a1102aa8dea1581f75e88"
     },
     {
       "path": "INTEGRATION.md",
-      "sha256": "34b4d63381a999132b8b32aedd66fc07c0e2d51c869b90fdaf1ceba8015079d5"
+      "sha256": "6e6295d879924cf1cf1580f532b1336dc8a895c5f37c2877296c656db5030f21"
     },
     {
       "path": "CONTRIBUTING.md",

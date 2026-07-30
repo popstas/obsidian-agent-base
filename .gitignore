@@ -1,6 +1,9 @@
 # Автогенерируется хуком из tasks.md
 files/tasks.json
 
+# Связь .agents/skills → skills/ для Codex: symlink или junction, зависит от машины
+.agents/
+
 # Obsidian: per-machine state
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
