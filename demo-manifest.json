@@ -7,7 +7,7 @@
     },
     {
       "path": "Log/2026/07/2026-07-28.md",
-      "sha256": "960494d36fd705ba19caccf8af2ccad315cf2f862743794831988243b965c423"
+      "sha256": "53b6e491b03b073af99695fb5774db4fd7049241dccdb735791dd48cc0879e1d"
     },
     {
       "path": "Log/Reports/2026-07-20.md",
@@ -16,10 +16,6 @@
     {
       "path": "Notes/2026/07/Обустройство vault.md",
       "sha256": "3ac5706bb5e615a161534fd0e21e7b3ff833ae8c0bd435d325d78fab665b6f3f"
-    },
-    {
-      "path": "Notes/2026/07/Созвон по vault 2026-07-28.md",
-      "sha256": "06df599e07396ece6807bbb800ef272aa955fc760893f7a6e0d4b690612afe5b"
     }
   ],
   "setupDocs": [
