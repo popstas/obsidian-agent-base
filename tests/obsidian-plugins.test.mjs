@@ -7,6 +7,19 @@ import { tmpdir } from 'node:os';
 import { REPO } from '../scripts/lib/repo.mjs';
 import { startGithubStub } from './helpers/github-stub.mjs';
 
+// pwsh предустановлен на обоих раннерах CI (ubuntu-latest и windows-latest),
+// поэтому обе клиентские реализации проверяются на обеих ОС. Локально pwsh
+// может отсутствовать — тогда PowerShell-тесты штатно пропускаются, а не
+// падают, чтобы разработка на bash-версии не блокировалась установкой pwsh.
+let hasPwsh = false;
+try {
+  execFileSync('pwsh', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.Major'], { stdio: 'pipe' });
+  hasPwsh = true;
+} catch {
+  hasPwsh = false;
+}
+const skipNoPwsh = hasPwsh ? false : 'pwsh не установлен';
+
 const manifest = JSON.parse(readFileSync(join(REPO, 'obsidian-plugins.json'), 'utf8'));
 const community = JSON.parse(readFileSync(join(REPO, '.obsidian', 'community-plugins.json'), 'utf8'));
 const pluginData = (id) =>
@@ -108,11 +121,28 @@ test('bash сравнивает версии покомпонентно', () => 
   assert.equal(bashCompare('8.4', '8.3.9'), '1');
 });
 
+const pwsh = (args) => execFileSync('pwsh', ['-NoProfile', '-File',
+  join(REPO, 'scripts', 'install-obsidian-plugins.ps1'), ...args], { encoding: 'utf8' });
+
+test('PowerShell-установщик разбирает манифест так же, как JSON.parse', { skip: skipNoPwsh }, () => {
+  assert.equal(pwsh(['-DryRun']).replace(/\r\n/g, '\n'), dryRunLines());
+});
+
+test('PowerShell сравнивает версии покомпонентно', { skip: skipNoPwsh }, () => {
+  const out = execFileSync('pwsh', ['-NoProfile', '-Command',
+    `. '${join(REPO, 'scripts', 'install-obsidian-plugins.ps1')}';` +
+    `@('0.9.0|0.10.0','0.10.0|0.9.0','1.2.3|1.2.3','8.3|8.3.0','8.4|8.3.9') | ` +
+    `ForEach-Object { $p = $_ -split '\\|'; Compare-PluginVersion $p[0] $p[1] }`],
+    { encoding: 'utf8' });
+  assert.deepEqual(out.trim().split(/\r?\n/), ['-1', '1', '0', '0', '1']);
+});
+
 // Установочный путь у bash- и PowerShell-реализаций одинаков, поэтому тест
 // один и параметризован раннером. Копия на каждую ОС разошлась бы при первой
-// же правке поведения. Запись про pwsh добавит Задача 3.
+// же правке поведения.
 const RUNNERS = [
   { name: 'bash', script: 'install-obsidian-plugins.sh', cmd: 'bash', args: [] },
+  { name: 'PowerShell', script: 'install-obsidian-plugins.ps1', cmd: 'pwsh', args: ['-NoProfile', '-File'], requiresPwsh: true },
 ];
 
 // Готовит песочницу с манифестом на один плагин и копией скрипта, запускает
@@ -141,9 +171,11 @@ async function inSandbox(runner, stubOpts, body) {
 }
 
 for (const runner of RUNNERS) {
+  const skip = runner.requiresPwsh ? skipNoPwsh : false;
+
   // Установочный путь целиком: скрипт ходит в подменённый GitHub, кладёт файлы
   // в .obsidian/plugins/<id>/ и пропускает отсутствующий styles.css.
-  test(`${runner.name}: установщик кладёт файлы плагина и переживает отсутствие styles.css`, async () => {
+  test(`${runner.name}: установщик кладёт файлы плагина и переживает отсутствие styles.css`, { skip }, async () => {
     await inSandbox(runner, {
       tag: '9.9.9',
       assets: { 'manifest.json': '{"version":"9.9.9"}', 'main.js': 'console.log(1)' },
@@ -158,7 +190,7 @@ for (const runner of RUNNERS) {
   // Каталог, которого не было до запуска, при провале удаляется целиком —
   // иначе на диске остаётся полуустановленный плагин. В стенде нет даже
   // manifest.json, поэтому падение гарантировано.
-  test(`${runner.name}: установщик убирает за собой при провале`, async () => {
+  test(`${runner.name}: установщик убирает за собой при провале`, { skip }, async () => {
     await inSandbox(runner, { tag: '9.9.9', assets: {} }, ({ sandbox, run }) => {
       assert.throws(run, 'скрипт обязан выйти с ненулевым кодом');
       assert.equal(existsSync(join(sandbox, '.obsidian', 'plugins', 'stub-plugin')), false);

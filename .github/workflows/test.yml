@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      # pwsh предустановлен на обоих раннерах (ubuntu-latest, windows-latest).
+      # Если этот шаг однажды упадёт — значит PowerShell-тесты в npm test
+      # перестали выполняться и молча пропускаются, а не что pwsh не нужен.
+      - run: pwsh --version
       - run: npm test
       # Хуки не переживают clone, поэтому актуальность Skills list.md
       # гарантируется именно здесь.
