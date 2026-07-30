@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { REPO } from '../scripts/lib/repo.mjs';
 
 const manifest = JSON.parse(readFileSync(join(REPO, 'obsidian-plugins.json'), 'utf8'));
@@ -66,4 +67,27 @@ test('иконки назначены только существующим фа
     if (key === 'settings') continue;
     assert.ok(existsSync(join(REPO, key)), `иконка назначена несуществующему пути: ${key}`);
   }
+});
+
+// Клиентский установщик на bash разбирает obsidian-plugins.json построчно —
+// без jq, которого нет на чистой macOS. Парсер валиден, только пока каждый
+// объект плагина занимает ровно одну строку.
+test('каждый плагин в манифесте занимает одну строку', () => {
+  const raw = readFileSync(join(REPO, 'obsidian-plugins.json'), 'utf8');
+  const objectLines = raw.split('\n').filter((l) => l.includes('"id"'));
+  assert.equal(objectLines.length, manifest.plugins.length,
+    `строк с "id" ${objectLines.length}, плагинов ${manifest.plugins.length} — объект растянулся на несколько строк`);
+  for (const line of objectLines) {
+    assert.match(line.trim(), /^\{.*\},?$/,
+      `объект плагина не помещается в одну строку: ${line.trim()}`);
+  }
+});
+
+const dryRunLines = () => manifest.plugins.map((p) =>
+  [p.id, p.repo, p.minVersion, p.vendored ? 'vendored' : 'remote'].join('\t')).join('\n') + '\n';
+
+test('bash-установщик разбирает манифест так же, как JSON.parse', () => {
+  const out = execFileSync('bash', [join(REPO, 'scripts', 'install-obsidian-plugins.sh'), '--dry-run'],
+    { encoding: 'utf8' });
+  assert.equal(out, dryRunLines());
 });
