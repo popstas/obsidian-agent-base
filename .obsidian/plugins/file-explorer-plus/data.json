@@ -57,16 +57,9 @@
       {
         "name": "",
         "active": true,
-        "type": "DIRECTORIES",
-        "pattern": "scripts",
-        "patternType": "STRICT"
-      },
-      {
-        "name": "",
-        "active": true,
-        "type": "DIRECTORIES",
-        "pattern": "tests",
-        "patternType": "STRICT"
+        "type": "FILES_AND_DIRECTORIES",
+        "pattern": "^(scripts|tests)(/|$)",
+        "patternType": "REGEX"
       }
     ],
     "frontMatter": [
