@@ -40,13 +40,22 @@ test('file-explorer-plus прячет AGENTS.md', () => {
 // Каталоги прячутся регуляркой, а не STRICT: хук плагина на удаление файла
 // вырезает из настроек ровно STRICT-фильтры и тут же перезаписывает data.json,
 // поэтому STRICT-правила на scripts/tests однажды пропали молча.
-test('file-explorer-plus прячет scripts и tests, не полагаясь на STRICT', () => {
+test('file-explorer-plus прячет каталоги и служебные доки, не полагаясь на STRICT', () => {
   const paths = pluginData('file-explorer-plus').hideFilters.paths;
+  const hidden = (path, kind) => paths.some((f) =>
+    f.active && f.patternType !== 'STRICT' &&
+    (kind === 'dir' ? f.type !== 'FILES' : f.type !== 'DIRECTORIES') &&
+    new RegExp(f.patternType === 'REGEX' ? f.pattern : `^${f.pattern}$`).test(path));
+
   for (const dir of ['scripts', 'tests']) {
-    const rule = paths.find((f) =>
-      f.active && f.patternType !== 'STRICT' && f.type !== 'FILES' &&
-      new RegExp(f.patternType === 'REGEX' ? f.pattern : `^${f.pattern}$`).test(dir));
-    assert.ok(rule, `нет активного не-STRICT правила, прячущего каталог ${dir}`);
+    assert.ok(hidden(dir, 'dir'), `нет активного не-STRICT правила, прячущего каталог ${dir}`);
+  }
+  for (const file of ['CHANGELOG.md', 'CONTRIBUTING.md', 'INTEGRATION.md']) {
+    assert.ok(hidden(file, 'file'), `нет активного не-STRICT правила, прячущего ${file}`);
+  }
+  // README читают по ссылкам из первой задачи лестницы — он остаётся видимым.
+  for (const file of ['README.md', 'README_ru.md', 'tasks.md']) {
+    assert.ok(!hidden(file, 'file'), `${file} не должен прятаться`);
   }
 });
 

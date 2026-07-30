@@ -60,6 +60,13 @@
         "type": "FILES_AND_DIRECTORIES",
         "pattern": "^(scripts|tests)(/|$)",
         "patternType": "REGEX"
+      },
+      {
+        "name": "",
+        "active": true,
+        "type": "FILES",
+        "pattern": "^(CHANGELOG|CONTRIBUTING|INTEGRATION)\\.md$",
+        "patternType": "REGEX"
       }
     ],
     "frontMatter": [

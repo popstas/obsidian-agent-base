@@ -17,7 +17,8 @@ files/tasks.json
 !.obsidian/plugins/tasks-mover/
 
 # У двух плагинов vault владеет не кодом, а настройками: file-explorer-plus
-# прячет AGENTS.md из дерева файлов, obsidian-icon-folder держит иконки файлов
+# убирает из дерева файлов служебное (AGENTS.md, CHANGELOG, CONTRIBUTING,
+# INTEGRATION, scripts/, tests/), obsidian-icon-folder держит иконки файлов
 # лестницы. Каталог приходится переоткрыть, иначе git в него не заглядывает,
 # и заново закрыть всё, кроме data.json — код по-прежнему ставит скрипт.
 !.obsidian/plugins/file-explorer-plus/
