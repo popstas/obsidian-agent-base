@@ -3,53 +3,44 @@
   "demoFiles": [
     {
       "path": "Log/2026/07/2026-07-27.md",
-      "sha256": "d494b86e19cbe3c85b02e074d869af200e04e1fe8e654f5170ff76d5fd32ea9c"
+      "sha256": "7efb3a9ed656fced1934a8b2c3f90614a07f69820167f4236662d8ebbf351df6"
     },
     {
       "path": "Log/2026/07/2026-07-28.md",
-      "sha256": "dcc6fa5d46e157cb0e0cb452dc2f3a07b36bd023eb4bfa5a37dcaef65919adeb"
+      "sha256": "960494d36fd705ba19caccf8af2ccad315cf2f862743794831988243b965c423"
     },
     {
       "path": "Log/Reports/2026-07-20.md",
-      "sha256": "6923d2ad08f6a2cc6e2f111e998b9a4bc6e472e352e1f336733f868b0210d395"
+      "sha256": "d3d5350bb2918fa0df378b729ff59755792c4a12e400f28bcfe7f44032e2e41b"
     },
     {
-      "path": "Notes/Обустройство вольта.md",
-      "sha256": "5380ac8ac77f4892b94b91fbc424813ef6633fc94aae9172e9f81d43b7ad684a"
+      "path": "Notes/Обустройство vault.md",
+      "sha256": "3ac5706bb5e615a161534fd0e21e7b3ff833ae8c0bd435d325d78fab665b6f3f"
     },
     {
-      "path": "Notes/Созвон по вольту 2026-07-28.md",
-      "sha256": "da447017f26ecb791e9529215644d5343dcf2388afaecdfbc04da6777a215ae4"
+      "path": "Notes/Созвон по vault 2026-07-28.md",
+      "sha256": "06df599e07396ece6807bbb800ef272aa955fc760893f7a6e0d4b690612afe5b"
     }
   ],
-  "demoBlocks": [
+  "setupDocs": [
     {
-      "path": "tasks.md",
-      "sha256": "1fb8480b3e3f3dc2c0919a1aac6b42cbaf6cb83954d29706ea63c2f669e2aaba"
+      "path": "README.md",
+      "sha256": "4f29e4c301421a23eaaff24b5afb513d2c6f6cb79d12ef5db742423664b17140"
     },
     {
-      "path": "projects.md",
-      "sha256": "307590f49e36fb8f1a23f1d77aeffd7949dcba47c186ea85bb2cbd873c430d5c"
+      "path": "README_ru.md",
+      "sha256": "59b7c231e222218a4ceb570d007d4f6ee374a4433b2d3968aa9db4de02028f8d"
     },
     {
-      "path": "tasks-future.md",
-      "sha256": "beb90a67a7f0dd5d57ca426767811fef4f87f1782640d250681888d81bfd63c9"
+      "path": "INTEGRATION.md",
+      "sha256": "34b4d63381a999132b8b32aedd66fc07c0e2d51c869b90fdaf1ceba8015079d5"
     },
     {
-      "path": "tasks-snoozed.md",
-      "sha256": "909978b464f21d07959551992b090ca02082cc09a76d9a533310fcab813f6312"
-    },
-    {
-      "path": "ideas.md",
-      "sha256": "dbe2cdd43a4fc5df4e2e409742d9466f12b5f66cd709ce85dd32c4b4e34c5e2d"
-    },
-    {
-      "path": "tasks-recurring.md",
-      "sha256": "61a30526655eafc4371c328c3bfc06d373daf95c0a9af458d48c1eb770380123"
+      "path": "CONTRIBUTING.md",
+      "sha256": "988cc069fc8d486910c6300f368af6c36a03104aaa24054b10ca37ae509cd326"
     }
   ],
   "baseOnly": [
-    "CONTRIBUTING.md",
     "tests",
     ".githooks",
     ".github",

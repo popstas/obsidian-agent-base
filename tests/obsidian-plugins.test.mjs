@@ -37,7 +37,7 @@ test('file-explorer-plus прячет AGENTS.md', () => {
   assert.equal(rule.active, true, 'правило на AGENTS.md выключено');
 });
 
-// Ключи верхнего уровня в data.json иконок — это пути к заметкам. Личный вольт
+// Ключи верхнего уровня в data.json иконок — это пути к заметкам. Личный vault
 // приносит сюда свои: так в базу чуть не уехала «Книги/Книги 2026.md».
 test('иконки назначены только существующим файлам', () => {
   for (const key of Object.keys(pluginData('obsidian-icon-folder'))) {

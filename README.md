@@ -20,7 +20,7 @@ scripts/                 skills list, demo manifest, plugin installer, release
 tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.md
 Log/ Notes/ _templates/ files/
 obsidian-plugins.json    which Obsidian plugins the vault expects
-demo-manifest.json       demo files + hashes, consumed by demo-content-delete
+demo-manifest.json       what demo-content-delete removes: demo files, setup docs, base-only paths
 ```
 
 ## Install
@@ -35,7 +35,13 @@ node scripts/install-obsidian-plugins.mjs
 
 Open the folder as a vault in Obsidian, then start an agent session in it and say
 "adapt this vault to me". The agent follows `INTEGRATION.md`, interviews you, and
-finishes by running the `demo-content-delete` skill to strip the demo content.
+finishes by running the `demo-content-delete` skill to strip the demo content — the
+example logs, report, and notes, plus, if you want, the setup docs themselves.
+
+The task ladder is not part of that: the tasks shipped in `tasks.md` and
+`tasks-future.md` are onboarding every user actually does — read the README, list
+where else your tasks live, move them here, log your first day, write the first
+weekly report. You close them, you don't delete them.
 
 Updates: `git pull`. If you have customized the skills, use the `base-sync` skill
 instead — it shows what changed upstream without clobbering your edits.
@@ -111,3 +117,5 @@ to pull, what to keep, how to push an improvement back to base) is handled by th
 ```
 
 `➕ YYYY-MM-DD` — creation date, `✅ YYYY-MM-DD` — completion date. Sub-bullets use a tab. The file is split into two sections: `# Week:` — the current week (completed `- [x]` stay at the top, open ones below), `# Week+` — a longer horizon. The legend line under `# Week+` links to the `tasks-future.md` backlog.
+
+> Demo file: the `demo-content-delete` skill will offer to delete this file.

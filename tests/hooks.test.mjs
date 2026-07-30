@@ -14,7 +14,7 @@ test('tasks-startup печатает вложенный путь лога', () =
   assert.ok(ctx.includes(expected), `в подсказке нет ${expected}: ${ctx}`);
 });
 
-test('settings.json регистрирует вольт как локальный marketplace', () => {
+test('settings.json регистрирует vault как локальный marketplace', () => {
   const s = JSON.parse(readFileSync(join(REPO, '.claude', 'settings.json'), 'utf8'));
   assert.deepEqual(s.extraKnownMarketplaces['obsidian-agent-base'].source,
     { source: 'directory', path: '.' });

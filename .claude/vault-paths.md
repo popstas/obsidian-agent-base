@@ -1,8 +1,8 @@
-# Пути вольта для скиллов обзоров
+# Пути vault для скиллов обзоров
 
 Читают `weekly-review` и `monthly-review` (ключи `weekly_report`, `monthly_report`,
 `year_goals`). Если файла нет, эти скиллы падают обратно на Glob по дефолтным путям
-ядра — см. их `SKILL.md`. Заполняется/проверяется при адаптации вольта, см.
+ядра — см. их `SKILL.md`. Заполняется/проверяется при адаптации vault, см.
 `INTEGRATION.md`.
 
 - `weekly_report`: `Log/Reports/????-??-??.md` — недельные отчёты (`weekly-report`);
@@ -13,4 +13,4 @@
   basename уникален глобально (см. правило wikilink-резолвинга в `obsidian-vault`).
 
 Если ключа/файла для конкретного шага нет — соответствующий шаг обзора пропускается,
-это штатное поведение (см. `SKILL.md` weekly-review/monthly-review, раздел «Пути вольта»).
+это штатное поведение (см. `SKILL.md` weekly-review/monthly-review, раздел «Пути vault»).

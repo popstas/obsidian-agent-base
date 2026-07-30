@@ -24,7 +24,7 @@ const LOCK = join(ROOT, "skills-lock.json");
 
 // Таблица алиасов: имя в base -> возможные локальные имена у наследника.
 // obsidian-vault резолвится не списком конкретных имён (это были бы приватные
-// названия чужих вольтов), а суффиксным правилом ниже, в findLocal: любой
+// названия чужих vault), а суффиксным правилом ниже, в findLocal: любой
 // локальный каталог скилла с именем "*-vault" считается локальным аналогом.
 const ALIASES = {
   "new-task": ["new-task", "add-task"],
@@ -83,7 +83,7 @@ function baseSkillFile(baseRoot, baseName) {
   return join(baseRoot, "skills", baseName, "SKILL.md");
 }
 
-// Локальный каталог скиллов. База и склонированные из неё вольты держат
+// Локальный каталог скиллов. База и склонированные из неё vault держат
 // скиллы в skills/ (Obsidian не показывает dot-каталоги); адаптированные
 // форки исторически — в .claude/skills. Переопределяется через
 // baseSync.local.skillsDir в skills-lock.json.
@@ -105,8 +105,8 @@ function findLocal(lock, baseName) {
     const f = join(localSkillsDir(lock), name, "SKILL.md");
     if (existsSync(f)) return { name, path: join(localSkillsRel(lock), name, "SKILL.md") };
   }
-  // Суффиксный фолбэк для вольт-скилла: любой локальный каталог "*-vault"
-  // (форки называют свой вольт-скилл по имени своего вольта, например
+  // Суффиксный фолбэк для vault-скилла: любой локальный каталог "*-vault"
+  // (форки называют свой vault-скилл по имени своего vault, например
   // work-vault) считается локальным аналогом base-скилла obsidian-vault.
   if (baseName === "obsidian-vault") {
     const dir = localSkillsDir(lock);

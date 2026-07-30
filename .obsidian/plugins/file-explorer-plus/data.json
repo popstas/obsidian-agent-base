@@ -53,6 +53,20 @@
         "type": "FILES",
         "pattern": "AGENTS.md",
         "patternType": "STRICT"
+      },
+      {
+        "name": "",
+        "active": true,
+        "type": "DIRECTORIES",
+        "pattern": "scripts",
+        "patternType": "STRICT"
+      },
+      {
+        "name": "",
+        "active": true,
+        "type": "DIRECTORIES",
+        "pattern": "tests",
+        "patternType": "STRICT"
       }
     ],
     "frontMatter": [

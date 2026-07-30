@@ -1,5 +1,5 @@
 {
-  "$comment": "Плагины вольта. enabled — попадает в .obsidian/community-plugins.json; vendored — лежит в репозитории, скриптом не качается.",
+  "$comment": "Плагины vault. enabled — попадает в .obsidian/community-plugins.json; vendored — лежит в репозитории, скриптом не качается.",
   "plugins": [
     { "id": "tasks-mover", "repo": "popstas/obsidian-agent-base", "minVersion": "1.0.0", "enabled": true, "vendored": true },
     { "id": "dataview", "repo": "blacksmithgu/obsidian-dataview", "minVersion": "0.5.68", "enabled": true },

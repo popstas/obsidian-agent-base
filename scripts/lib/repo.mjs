@@ -60,29 +60,6 @@ export function rootDocs() {
     .map((n) => join(REPO, n));
 }
 
-export const DEMO_BEGIN = '<!-- demo:begin -->';
-export const DEMO_END = '<!-- demo:end -->';
-
-// Достаёт все размеченные демо-блоки из текста файла, маркеры включены, в
-// порядке появления в файле. Используется и генератором хэшей
-// (scripts/gen-demo-manifest.mjs), и тестом (tests/demo.test.mjs), и
-// скиллом demo-content-delete — чтобы все три считали ровно одно и то же.
-// Непарный `demo:begin` без соответствующего `demo:end` молча обрывает
-// разбор — это ловит отдельная проверка на парность маркеров.
-export function extractMarkedRegions(text) {
-  const regions = [];
-  let idx = 0;
-  for (;;) {
-    const b = text.indexOf(DEMO_BEGIN, idx);
-    if (b === -1) break;
-    const e = text.indexOf(DEMO_END, b);
-    if (e === -1) break;
-    regions.push(text.slice(b, e + DEMO_END.length));
-    idx = e + DEMO_END.length;
-  }
-  return regions;
-}
-
 export const SKILLS_LIST = 'skills/Skills list.md';
 
 // Единственный не-SKILL.md файл в skills/, поэтому [[Skills list]] однозначен.
