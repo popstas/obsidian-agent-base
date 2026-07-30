@@ -4,7 +4,6 @@
     { "id": "tasks-mover", "repo": "popstas/obsidian-agent-base", "minVersion": "1.0.0", "enabled": true, "vendored": true },
     { "id": "dataview", "repo": "blacksmithgu/obsidian-dataview", "minVersion": "0.5.68", "enabled": true },
     { "id": "obsidian-tasks-plugin", "repo": "obsidian-tasks-group/obsidian-tasks", "minVersion": "8.3.0", "enabled": true },
-    { "id": "templater-obsidian", "repo": "silentvoid13/Templater", "minVersion": "2.20.6", "enabled": true },
     { "id": "obsidian-outliner", "repo": "vslinko/obsidian-outliner", "minVersion": "4.10.2", "enabled": true },
     { "id": "various-complements", "repo": "tadashi-aikawa/obsidian-various-complements-plugin", "minVersion": "11.4.0", "enabled": true },
     { "id": "obsidian-icon-folder", "repo": "florianwoelki/obsidian-iconize", "minVersion": "2.14.7", "enabled": true },
@@ -13,7 +12,6 @@
     { "id": "file-explorer-plus", "repo": "kelszo/obsidian-file-explorer-plus", "minVersion": "1.3.1", "enabled": true },
     { "id": "obsidian-local-images-plus", "repo": "sergei-korneev/obsidian-local-images-plus", "minVersion": "0.16.4", "enabled": true },
     { "id": "claude-sidebar", "repo": "derek-larson14/obsidian-claude-sidebar", "minVersion": "1.8.16", "enabled": true },
-    { "id": "omnisearch", "repo": "scambier/obsidian-omnisearch", "minVersion": "1.29.3", "enabled": false },
-    { "id": "obsidian-excel-to-markdown-table", "repo": "ganesshkumar/obsidian-excel-to-markdown-table", "minVersion": "0.4.0", "enabled": false }
+    { "id": "obsidian-excel-to-markdown-table", "repo": "ganesshkumar/obsidian-excel-to-markdown-table", "minVersion": "0.4.0", "enabled": true }
   ]
 }
