@@ -14,7 +14,10 @@ MANIFEST="$REPO/obsidian-plugins.json"
 # Печатает: id \t repo \t minVersion \t vendored|remote
 parse_manifest() {
   local line id repo minv kind
-  while IFS= read -r line; do
+  # "|| [ -n "$line" ]" — иначе последняя строка без завершающего \n (так
+  # пишет JSON.stringify) молча теряется: read возвращает код ошибки, но
+  # переменную всё равно заполняет.
+  while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
       *'"id"'*) ;;
       *) continue ;;
@@ -30,13 +33,141 @@ parse_manifest() {
   done < "$1"
 }
 
+# Числовое сравнение семвер-подобных версий по компонентам: "0.9.0" < "0.10.0",
+# чего не даёт строковое сравнение. Печатает -1/0/1, недостающие компоненты — 0.
+# Нечисловой хвост компонента отбрасывается: "8.3.0-beta" читается как 8.3.0.
+compare_versions() {
+  local a="$1" b="$2" i len na nb
+  local -a pa pb
+  IFS=. read -r -a pa <<< "$a"
+  IFS=. read -r -a pb <<< "$b"
+  len=${#pa[@]}
+  if [ ${#pb[@]} -gt "$len" ]; then len=${#pb[@]}; fi
+  i=0
+  while [ "$i" -lt "$len" ]; do
+    na=${pa[$i]:-0}; nb=${pb[$i]:-0}
+    na=${na%%[!0-9]*}; nb=${nb%%[!0-9]*}
+    if [ -z "$na" ]; then na=0; fi
+    if [ -z "$nb" ]; then nb=0; fi
+    if [ "$na" -ne "$nb" ]; then
+      if [ "$na" -lt "$nb" ]; then echo -1; else echo 1; fi
+      return 0
+    fi
+    i=$((i + 1))
+  done
+  echo 0
+}
+
+API="${OAB_GITHUB_API:-https://api.github.com}"
+DL="${OAB_GITHUB_DOWNLOAD:-https://github.com}"
+
+curl_args() {
+  CURL_ARGS=(-sSL -H "user-agent: obsidian-agent-base")
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    CURL_ARGS+=(-H "authorization: Bearer $GITHUB_TOKEN")
+  fi
+}
+
+# Версия установленного плагина по его manifest.json. Пусто — если плагина нет
+# или manifest.json не читается (считаем это "не установлен").
+installed_version() {
+  local mf="$1/manifest.json"
+  if [ ! -f "$mf" ]; then return 0; fi
+  grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$mf" \
+    | head -1 | sed 's/.*"\([^"]*\)"$/\1/'
+}
+
+describe_http_failure() {
+  case "$2" in
+    403) echo "FAIL $1: GitHub ответил 403 — похоже, исчерпан лимит запросов к API без авторизации. Установи GITHUB_TOKEN в окружении, чтобы поднять лимит." ;;
+    404) echo "FAIL $1: GitHub ответил 404 — репозиторий мог быть переименован или удалён. Проверь и обнови obsidian-plugins.json." ;;
+    *)   echo "FAIL $1: GitHub ответил $2" ;;
+  esac
+}
+
 main() {
   if [ "${1:-}" = "--dry-run" ]; then
     parse_manifest "$MANIFEST"
     return 0
   fi
-  echo "install-obsidian-plugins: установка появится в следующей задаче" >&2
-  return 1
+
+  curl_args
+  local failed=0 id repo minv kind dir have tag status body name dir_existed newv
+  local tmp; tmp=$(mktemp)
+  # Разбор идёт через подстановку команды, а не через пайп: пайп уводит цикл
+  # в подоболочку, и счётчик failed из неё не возвращается.
+  while IFS=$'\t' read -r id repo minv kind; do
+    if [ -z "$id" ]; then continue; fi
+    dir="$REPO/.obsidian/plugins/$id"
+
+    if [ "$kind" = "vendored" ]; then
+      echo "skip $id — вендоренный"
+      continue
+    fi
+
+    have=$(installed_version "$dir")
+    if [ -n "$have" ] && [ "$(compare_versions "$have" "$minv")" != "-1" ]; then
+      echo "skip $id — установлена версия $have, требуется $minv"
+      continue
+    fi
+
+    status=$(curl "${CURL_ARGS[@]}" -o "$tmp" -w '%{http_code}' \
+      -H "accept: application/vnd.github+json" "$API/repos/$repo/releases/latest")
+    if [ "$status" != "200" ]; then
+      describe_http_failure "$id" "$status" >&2
+      failed=$((failed + 1))
+      continue
+    fi
+    tag=$(grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' "$tmp" \
+      | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
+    if [ -z "$tag" ]; then
+      echo "FAIL $id: в ответе GitHub нет tag_name" >&2
+      failed=$((failed + 1))
+      continue
+    fi
+
+    # Запоминаем, существовала ли директория ДО запуска: если скачивание
+    # упадёт посередине, чистим только то, что создали сами — ранее рабочую
+    # установку не трогаем, даже если она теперь смешанной версии.
+    dir_existed=0
+    if [ -d "$dir" ]; then dir_existed=1; fi
+    mkdir -p "$dir"
+
+    local ok=1
+    for name in manifest.json main.js styles.css; do
+      status=$(curl "${CURL_ARGS[@]}" -o "$dir/$name" -w '%{http_code}' \
+        "$DL/$repo/releases/download/$tag/$name")
+      if [ "$status" != "200" ]; then
+        rm -f "$dir/$name"
+        if [ "$name" = "styles.css" ]; then continue; fi
+        echo "FAIL $id: не удалось скачать $name: HTTP $status" >&2
+        ok=0
+        break
+      fi
+    done
+
+    if [ "$ok" = "0" ]; then
+      if [ "$dir_existed" = "0" ]; then rm -rf "$dir"; fi
+      failed=$((failed + 1))
+      continue
+    fi
+
+    newv=$(installed_version "$dir")
+    if [ -z "$newv" ]; then newv='?'; fi
+    if [ -n "$have" ]; then
+      echo "installed $id — обновлён $have → $newv"
+    else
+      echo "installed $id ($newv)"
+    fi
+  done <<< "$(parse_manifest "$MANIFEST")"
+  rm -f "$tmp"
+
+  if [ "$failed" -gt 0 ]; then
+    echo "" >&2
+    echo "$failed плагин(ов) не установлено. Поставь их вручную через Obsidian → Community plugins." >&2
+    return 1
+  fi
+  return 0
 }
 
 # Скрипт можно исходить (source) — тогда main не запускается и тесты

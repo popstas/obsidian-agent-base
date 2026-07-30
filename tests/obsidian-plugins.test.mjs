@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, copyFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { REPO } from '../scripts/lib/repo.mjs';
+import { startGithubStub } from './helpers/github-stub.mjs';
 
 const manifest = JSON.parse(readFileSync(join(REPO, 'obsidian-plugins.json'), 'utf8'));
 const community = JSON.parse(readFileSync(join(REPO, '.obsidian', 'community-plugins.json'), 'utf8'));
@@ -91,3 +93,75 @@ test('bash-установщик разбирает манифест так же,
     { encoding: 'utf8' });
   assert.equal(out, dryRunLines());
 });
+
+// "0.9.0" < "0.10.0" — строковое сравнение этого не даёт, поэтому обе
+// клиентские реализации сравнивают версии покомпонентно и численно.
+const bashCompare = (a, b) => execFileSync('bash', ['-c',
+  `source "${join(REPO, 'scripts', 'install-obsidian-plugins.sh')}"; compare_versions "${a}" "${b}"`],
+  { encoding: 'utf8' }).trim();
+
+test('bash сравнивает версии покомпонентно', () => {
+  assert.equal(bashCompare('0.9.0', '0.10.0'), '-1');
+  assert.equal(bashCompare('0.10.0', '0.9.0'), '1');
+  assert.equal(bashCompare('1.2.3', '1.2.3'), '0');
+  assert.equal(bashCompare('8.3', '8.3.0'), '0');
+  assert.equal(bashCompare('8.4', '8.3.9'), '1');
+});
+
+// Установочный путь у bash- и PowerShell-реализаций одинаков, поэтому тест
+// один и параметризован раннером. Копия на каждую ОС разошлась бы при первой
+// же правке поведения. Запись про pwsh добавит Задача 3.
+const RUNNERS = [
+  { name: 'bash', script: 'install-obsidian-plugins.sh', cmd: 'bash', args: [] },
+];
+
+// Готовит песочницу с манифестом на один плагин и копией скрипта, запускает
+// установщик против подменённого GitHub и отдаёт телу теста путь и запускалку.
+async function inSandbox(runner, stubOpts, body) {
+  const stub = await startGithubStub(stubOpts);
+  const sandbox = mkdtempSync(join(tmpdir(), 'oab-'));
+  try {
+    // JSON.stringify кладёт всё в одну строку — построчный парсер bash находит
+    // на ней "id" и разбирает как один плагин, что и требуется.
+    writeFileSync(join(sandbox, 'obsidian-plugins.json'), JSON.stringify({
+      plugins: [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '1.0.0', enabled: true }],
+    }));
+    mkdirSync(join(sandbox, 'scripts'), { recursive: true });
+    const script = join(sandbox, 'scripts', runner.script);
+    copyFileSync(join(REPO, 'scripts', runner.script), script);
+    const run = () => execFileSync(runner.cmd, [...runner.args, script], {
+      encoding: 'utf8', stdio: 'pipe',
+      env: { ...process.env, OAB_GITHUB_API: stub.api, OAB_GITHUB_DOWNLOAD: stub.download },
+    });
+    body({ sandbox, run });
+  } finally {
+    await stub.close();
+    rmSync(sandbox, { recursive: true, force: true });
+  }
+}
+
+for (const runner of RUNNERS) {
+  // Установочный путь целиком: скрипт ходит в подменённый GitHub, кладёт файлы
+  // в .obsidian/plugins/<id>/ и пропускает отсутствующий styles.css.
+  test(`${runner.name}: установщик кладёт файлы плагина и переживает отсутствие styles.css`, async () => {
+    await inSandbox(runner, {
+      tag: '9.9.9',
+      assets: { 'manifest.json': '{"version":"9.9.9"}', 'main.js': 'console.log(1)' },
+    }, ({ sandbox, run }) => {
+      run();
+      const dir = join(sandbox, '.obsidian', 'plugins', 'stub-plugin');
+      assert.equal(readFileSync(join(dir, 'main.js'), 'utf8'), 'console.log(1)');
+      assert.equal(existsSync(join(dir, 'styles.css')), false, 'styles.css не должен создаваться');
+    });
+  });
+
+  // Каталог, которого не было до запуска, при провале удаляется целиком —
+  // иначе на диске остаётся полуустановленный плагин. В стенде нет даже
+  // manifest.json, поэтому падение гарантировано.
+  test(`${runner.name}: установщик убирает за собой при провале`, async () => {
+    await inSandbox(runner, { tag: '9.9.9', assets: {} }, ({ sandbox, run }) => {
+      assert.throws(run, 'скрипт обязан выйти с ненулевым кодом');
+      assert.equal(existsSync(join(sandbox, '.obsidian', 'plugins', 'stub-plugin')), false);
+    });
+  });
+}
