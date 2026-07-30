@@ -7,6 +7,9 @@
   "enabledPlugins": {
     "obsidian-agent-base@obsidian-agent-base": true
   },
+  "env": {
+    "STATUSLINE_TODO": "tasks.md"
+  },
   "hooks": {
     "PostToolUse": [
       {
