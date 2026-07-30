@@ -4,7 +4,7 @@
 
 ## Что это
 
-Личный vault на базе [obsidian-agent-base](https://github.com/popstas/obsidian-agent-base): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Единственная реальная зависимость — Node: на нём держится автоматизация vault (счётчик задач, хуки, статус-строка, см. «Автоматизация» ниже).
+Личный vault на базе [obsidian-agent-base](https://github.com/popstas/obsidian-agent-base): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Единственная реальная зависимость — Node: на нём держится автоматизация vault (счётчик задач, хуки, см. «Автоматизация» ниже).
 
 **Конвенции живут в скилле `obsidian-vault`** (`skills/obsidian-vault/SKILL.md`): таксономия каталогов, куда попадает какой тип заметки, правила wikilinks, работа с чувствительным содержимым, настройки Obsidian. Читай его перед созданием, переносом и переименованием заметок и не дублируй его правила здесь.
 
@@ -28,7 +28,6 @@
 
 - `.claude/gen-tasks-json.cjs` — пересобирает `files/tasks.json` (счётчики задач) из `tasks.md`. Запускается на старте сессии и хуком `PostToolUse` (`.claude/hooks/tasks-changed.mjs`) после правок `tasks.md`. `files/tasks.json` в `.gitignore`; считаются только чекбоксы нулевого отступа.
 - `.claude/hooks/tasks-startup.mjs` — `SessionStart`: подсказка заглянуть в `tasks.md` и лог текущего дня.
-- `.claude/statusline.cjs` — строка статуса по `tasks.md`.
 - `scripts/install-obsidian-plugins.mjs` — доставка Obsidian-плагинов по `obsidian-plugins.json`.
 
 ## Конвенции, на которых легко спотыкнуться

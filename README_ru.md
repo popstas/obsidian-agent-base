@@ -14,7 +14,7 @@ skills/                  скиллы агента, по одному SKILL.md �
 .claude-plugin/          плагин Claude Code + однопродуктовый marketplace
 .codex-plugin/           манифест плагина для Codex
 .cursor-plugin/          манифест плагина для Cursor
-.claude/                 настройки, хуки, счётчик задач, статус-строка, синхронизация с base
+.claude/                 настройки, хуки, счётчик задач, синхронизация с base
 .obsidian/               настройки Obsidian, сниппеты, вендоренный tasks-mover
 scripts/                 список скиллов, демо-манифест, установщик плагинов, релиз
 tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.md
@@ -71,7 +71,7 @@ node scripts/install-obsidian-plugins.mjs
 обновляются автоматически вместе с marketplace. Часть vault — лестницу задач и
 настройки `.obsidian` — сводишь руками; попроси агента провести тебя по `INTEGRATION.md`.
 
-Marketplace ставит только скиллы — счётчик задач и статус-строка в плагин не входят,
+Marketplace ставит только скиллы — счётчик задач и хуки в плагин не входят,
 это опциональные дополнения; где их взять, написано в `INTEGRATION.md`.
 
 ### Только скиллы, в Codex или Cursor

@@ -139,19 +139,17 @@
 git clone --depth 1 https://github.com/popstas/obsidian-agent-base /tmp/oab
 ```
 
-и скопируй в `.claude/` целевого vault четыре пути: `.claude/gen-tasks-json.cjs`,
-`.claude/statusline.cjs`, `.claude/hooks/tasks-startup.mjs`,
-`.claude/hooks/tasks-changed.mjs`. `.claude/settings.json` при этом **мерджи, а не
-перезаписывай** — у существующего vault он уже есть; добавь в него блоки
-`statusLine` и `hooks`. Таблица ниже — про адаптацию уже скопированных файлов, не про
-их получение.
+и скопируй в `.claude/` целевого vault три пути: `.claude/gen-tasks-json.cjs`,
+`.claude/hooks/tasks-startup.mjs`, `.claude/hooks/tasks-changed.mjs`.
+`.claude/settings.json` при этом **мерджи, а не перезаписывай** — у существующего
+vault он уже есть; добавь в него блоки `hooks`. Таблица ниже — про адаптацию уже
+скопированных файлов, не про их получение.
 
 | Файл | Когда трогать | Что правит |
 |---|---|---|
 | `gen-tasks-json.cjs` | сменили формат чекбоксов (не маркеры дат — их он не читает) | синхронизируй regex парсинга `- [x]`/`- [ ]` |
 | `tasks-startup.mjs` | сменили пути или хочешь другой текст подсказки на старте сессии | поправь сообщение и пути |
-| `statusline.cjs` | хочешь другой формат статус-строки | поправь шаблон вывода |
-| `settings.json` | всегда | **мерджить, не перезаписывать** `settings.json` целевого проекта (добавить `statusLine` и блоки `hooks`) |
+| `settings.json` | всегда | **мерджить, не перезаписывать** `settings.json` целевого проекта (добавить блоки `hooks`) |
 
 ---
 

@@ -14,7 +14,7 @@ skills/                  agent skills, one SKILL.md per skill (browsable in Obsi
 .claude-plugin/          Claude Code plugin + single-plugin marketplace
 .codex-plugin/           Codex plugin manifest
 .cursor-plugin/          Cursor plugin manifest
-.claude/                 settings, hooks, task counter, statusline, base sync
+.claude/                 settings, hooks, task counter, base sync
 .obsidian/               Obsidian settings, snippets, vendored tasks-mover
 scripts/                 skills list, demo manifest, plugin installer, release
 tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.md
@@ -71,7 +71,7 @@ installed, skills auto-update with the marketplace. The vault side — the task 
 the `.obsidian` settings — is merged by hand; ask your agent to walk you through
 `INTEGRATION.md`.
 
-The marketplace brings the skills only — the task counter and statusline are optional
+The marketplace brings the skills only — the task counter and hooks are optional
 extras, not part of the plugin; `INTEGRATION.md` says where to get them.
 
 ### Skills only, in Codex or Cursor

@@ -7,10 +7,6 @@
   "enabledPlugins": {
     "obsidian-agent-base@obsidian-agent-base": true
   },
-  "statusLine": {
-    "type": "command",
-    "command": "node .claude/statusline.cjs"
-  },
   "hooks": {
     "PostToolUse": [
       {
