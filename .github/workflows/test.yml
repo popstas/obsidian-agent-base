@@ -1,0 +1,25 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm test
+      # Хуки не переживают clone, поэтому актуальность Skills list.md
+      # гарантируется именно здесь.
+      - name: Skills list.md is up to date
+        run: |
+          npm run gen:skills-list
+          git diff --exit-code -- "skills/Skills list.md"

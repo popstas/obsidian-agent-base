@@ -1,0 +1,9 @@
+{
+  "id": "tasks-mover",
+  "name": "Tasks Mover",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "Right-click Move to relocate a task between tasks / tasks-future / ideas / tasks-snoozed.",
+  "author": "Stanislav Popov",
+  "isDesktopOnly": false
+}

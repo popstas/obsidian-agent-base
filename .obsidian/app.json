@@ -1,0 +1,9 @@
+{
+  "promptDelete": false,
+  "attachmentFolderPath": "files",
+  "userIgnoreFilters": [
+    "files/"
+  ],
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "current"
+}

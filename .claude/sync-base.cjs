@@ -23,10 +23,13 @@ const ROOT = join(__dirname, ".."); // корень репозитория на�
 const LOCK = join(ROOT, "skills-lock.json");
 
 // Таблица алиасов: имя в base -> возможные локальные имена у наследника.
+// obsidian-vault резолвится не списком конкретных имён (это были бы приватные
+// названия чужих вольтов), а суффиксным правилом ниже, в findLocal: любой
+// локальный каталог скилла с именем "*-vault" считается локальным аналогом.
 const ALIASES = {
   "new-task": ["new-task", "add-task"],
   "list-tasks": ["list-tasks", "list"],
-  "obsidian-vault": ["obsidian-vault", "expertizeme-vault", "home-vault"],
+  "obsidian-vault": ["obsidian-vault"],
 };
 
 // ---------- утилиты ----------
@@ -80,16 +83,42 @@ function baseSkillFile(baseRoot, baseName) {
   return join(baseRoot, "skills", baseName, "SKILL.md");
 }
 
-function localSkillsDir() {
-  return join(ROOT, ".claude", "skills");
+// Локальный каталог скиллов. База и склонированные из неё вольты держат
+// скиллы в skills/ (Obsidian не показывает dot-каталоги); адаптированные
+// форки исторически — в .claude/skills. Переопределяется через
+// baseSync.local.skillsDir в skills-lock.json.
+function localSkillsRel(lock) {
+  const explicit = lock && lock.baseSync && lock.baseSync.local && lock.baseSync.local.skillsDir;
+  if (explicit) return explicit;
+  if (existsSync(join(ROOT, "skills"))) return "skills";
+  return join(".claude", "skills");
+}
+
+function localSkillsDir(lock) {
+  return join(ROOT, localSkillsRel(lock));
 }
 
 // Найти локальный аналог base-скилла по алиасам/одноимённости.
-function findLocal(baseName) {
+function findLocal(lock, baseName) {
   const cands = ALIASES[baseName] || [baseName];
   for (const name of cands) {
-    const f = join(localSkillsDir(), name, "SKILL.md");
-    if (existsSync(f)) return { name, path: join(".claude", "skills", name, "SKILL.md") };
+    const f = join(localSkillsDir(lock), name, "SKILL.md");
+    if (existsSync(f)) return { name, path: join(localSkillsRel(lock), name, "SKILL.md") };
+  }
+  // Суффиксный фолбэк для вольт-скилла: любой локальный каталог "*-vault"
+  // (форки называют свой вольт-скилл по имени своего вольта, например
+  // work-vault) считается локальным аналогом base-скилла obsidian-vault.
+  if (baseName === "obsidian-vault") {
+    const dir = localSkillsDir(lock);
+    if (existsSync(dir)) {
+      const names = readdirSync(dir)
+        .filter((n) => n.endsWith("-vault") && n !== "obsidian-vault")
+        .sort();
+      for (const name of names) {
+        const f = join(dir, name, "SKILL.md");
+        if (existsSync(f)) return { name, path: join(localSkillsRel(lock), name, "SKILL.md") };
+      }
+    }
   }
   return null;
 }
@@ -133,7 +162,7 @@ function cmdStatus(jsonOut) {
     const baseHashNow = hashFile(baseSkillFile(baseRoot, baseName));
     const local = entry && entry.localPath
       ? { name: entry.localName, path: join(ROOT, entry.localPath) }
-      : findLocalFull(baseName);
+      : findLocalFull(lock, baseName);
     const localHashNow = local ? hashFile(local.path) : null;
     const state = classify(entry, baseHashNow, localHashNow);
     rows.push({ baseName, localName: local ? local.name : null, state, customized: !!(entry && entry.customized) });
@@ -142,8 +171,8 @@ function cmdStatus(jsonOut) {
   printTable(lock, rows);
 }
 
-function findLocalFull(baseName) {
-  const l = findLocal(baseName);
+function findLocalFull(lock, baseName) {
+  const l = findLocal(lock, baseName);
   if (!l) return null;
   return { name: l.name, path: join(ROOT, l.path) };
 }
@@ -176,12 +205,15 @@ function cmdDiff(skill) {
   if (!skill) fail("Укажи имя скилла: diff <skill>");
   const lock = readLock();
   const baseRoot = basePath(lock);
+  if (!baseRoot || !existsSync(baseRoot)) {
+    fail(`Не найден base по пути из skills-lock.json (baseSync.base.path). Запусти bootstrap.`);
+  }
   const entries = (lock.baseSync && lock.baseSync.skills) || {};
   const entry = entries[skill] || null;
   const baseFile = baseSkillFile(baseRoot, skill);
   const local = entry && entry.localPath
     ? { path: join(ROOT, entry.localPath) }
-    : findLocalFull(skill);
+    : findLocalFull(lock, skill);
   if (!existsSync(baseFile)) fail(`В base нет скилла ${skill}`);
   if (!local || !existsSync(local.path)) fail(`Локально нет скилла ${skill}`);
   const r = spawnSync("diff", ["-u", "--label", `base/${skill}`, "--label", `local/${skill}`, baseFile, local.path], { encoding: "utf-8" });
@@ -216,13 +248,13 @@ function cmdBootstrap() {
   const skills = {};
   for (const baseName of listBaseSkills(baseRoot)) {
     const baseHash = hashFile(baseSkillFile(baseRoot, baseName));
-    const local = findLocalFull(baseName);
+    const local = findLocalFull(lock, baseName);
     if (!local) {
       skills[baseName] = { baseName, localName: null, localPath: null, baseHashAtSync: baseHash, localHashAtSync: null, status: "not-imported" };
       continue;
     }
     const localHash = hashFile(local.path);
-    const relLocal = join(".claude", "skills", local.name, "SKILL.md");
+    const relLocal = join(localSkillsRel(lock), local.name, "SKILL.md");
     skills[baseName] = {
       baseName,
       localName: local.name,
@@ -260,7 +292,7 @@ function cmdStamp(skill) {
 
 function fail(msg) { console.error("Ошибка: " + msg); process.exit(1); }
 
-module.exports = { rawHash, classify };
+module.exports = { rawHash, classify, localSkillsDir, localSkillsRel, findLocal };
 
 if (require.main === module) {
   const [cmd, ...rest] = process.argv.slice(2);

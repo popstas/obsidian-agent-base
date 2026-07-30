@@ -1,0 +1,59 @@
+{
+  "$comment": "Читается скиллом demo-content-delete. Хэши пересчитываются npm run gen:demo-manifest.",
+  "demoFiles": [
+    {
+      "path": "Log/2026/07/2026-07-27.md",
+      "sha256": "d494b86e19cbe3c85b02e074d869af200e04e1fe8e654f5170ff76d5fd32ea9c"
+    },
+    {
+      "path": "Log/2026/07/2026-07-28.md",
+      "sha256": "dcc6fa5d46e157cb0e0cb452dc2f3a07b36bd023eb4bfa5a37dcaef65919adeb"
+    },
+    {
+      "path": "Log/Reports/2026-07-20.md",
+      "sha256": "6923d2ad08f6a2cc6e2f111e998b9a4bc6e472e352e1f336733f868b0210d395"
+    },
+    {
+      "path": "Notes/Обустройство вольта.md",
+      "sha256": "5380ac8ac77f4892b94b91fbc424813ef6633fc94aae9172e9f81d43b7ad684a"
+    },
+    {
+      "path": "Notes/Созвон по вольту 2026-07-28.md",
+      "sha256": "da447017f26ecb791e9529215644d5343dcf2388afaecdfbc04da6777a215ae4"
+    }
+  ],
+  "demoBlocks": [
+    {
+      "path": "tasks.md",
+      "sha256": "1fb8480b3e3f3dc2c0919a1aac6b42cbaf6cb83954d29706ea63c2f669e2aaba"
+    },
+    {
+      "path": "projects.md",
+      "sha256": "307590f49e36fb8f1a23f1d77aeffd7949dcba47c186ea85bb2cbd873c430d5c"
+    },
+    {
+      "path": "tasks-future.md",
+      "sha256": "beb90a67a7f0dd5d57ca426767811fef4f87f1782640d250681888d81bfd63c9"
+    },
+    {
+      "path": "tasks-snoozed.md",
+      "sha256": "909978b464f21d07959551992b090ca02082cc09a76d9a533310fcab813f6312"
+    },
+    {
+      "path": "ideas.md",
+      "sha256": "dbe2cdd43a4fc5df4e2e409742d9466f12b5f66cd709ce85dd32c4b4e34c5e2d"
+    },
+    {
+      "path": "tasks-recurring.md",
+      "sha256": "61a30526655eafc4371c328c3bfc06d373daf95c0a9af458d48c1eb770380123"
+    }
+  ],
+  "baseOnly": [
+    "CONTRIBUTING.md",
+    "tests",
+    ".githooks",
+    ".github",
+    "cliff.toml",
+    "docs/superpowers"
+  ]
+}

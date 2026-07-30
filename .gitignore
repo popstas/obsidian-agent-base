@@ -1,2 +1,24 @@
 # Автогенерируется хуком из tasks.md
 files/tasks.json
+
+# Obsidian: per-machine state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/workspace.json.bak
+.obsidian/*.sync-conflict-*.json
+.obsidian/graph.json
+.obsidian/.trash/
+.trash/
+.DS_Store
+
+# Чужие Obsidian-плагины ставятся скриптом, в репозиторий не коммитятся.
+# Свой tasks-mover — исключение, он вендорится.
+.obsidian/plugins/*
+!.obsidian/plugins/tasks-mover/
+
+# Приватные рабочие материалы автора (планы/спеки/SDD) — не для публичного репо.
+docs/superpowers/
+.superpowers/
+
+# Проектно-специфичные приватные термины для guard-теста (см. .privacy-terms.example)
+.privacy-terms

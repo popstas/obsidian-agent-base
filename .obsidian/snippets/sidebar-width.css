@@ -1,0 +1,13 @@
+/* Левый сайдбар раскрывается до 400px при наведении, с задержкой 1с.
+   transition берётся из целевого состояния: на :hover — задержка 1с (ждём
+   секунду перед раскрытием), в базовом — без задержки (свернётся сразу, как
+   только курсор ушёл). */
+
+.workspace-split.mod-horizontal.mod-sidedock.mod-left-split {
+  transition: width 0.15s ease 0s;
+}
+
+.workspace-split.mod-horizontal.mod-sidedock.mod-left-split:hover {
+  width: 400px !important;
+  transition: width 0.15s ease 1s;
+}

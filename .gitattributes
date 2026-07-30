@@ -1,0 +1,6 @@
+# LF везде: иначе на Windows markdown приедет с CRLF и sha256 в
+# demo-manifest.json разойдутся с файлами.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.woff2 binary
