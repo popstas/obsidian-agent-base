@@ -49,6 +49,9 @@ instead — it shows what changed upstream without clobbering your edits.
 > Adding the marketplace only registers it; the `install` step actually activates the
 > plugin's skills. Both are recorded in your **user-level** `~/.claude/settings.json`, not
 > in the clone, so you repeat this on each machine you use, not once per vault.
+>
+> Outside an agent session the equivalent is `claude plugin marketplace add ./` — the CLI
+> rejects a bare `.` with `Invalid marketplace source format`.
 
 ### Into an existing vault
 

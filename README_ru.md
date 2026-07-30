@@ -50,6 +50,9 @@ node scripts/install-obsidian-plugins.mjs
 > `install`. Обе команды сохраняются в **пользовательском** `~/.claude/settings.json`,
 > а не в клоне, поэтому шаг повторяется на каждой машине, которой пользуешься, а не
 > один раз на вольт.
+>
+> Вне сессии агента то же самое делается через `claude plugin marketplace add ./` —
+> голую `.` CLI отвергает: `Invalid marketplace source format`.
 
 ### В существующий вольт
 
