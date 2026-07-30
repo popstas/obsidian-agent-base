@@ -16,6 +16,17 @@ files/tasks.json
 .obsidian/plugins/*
 !.obsidian/plugins/tasks-mover/
 
+# У двух плагинов вольту принадлежит не код, а настройки: file-explorer-plus
+# прячет AGENTS.md из дерева файлов, obsidian-icon-folder держит иконки файлов
+# лестницы. Каталог приходится переоткрыть, иначе git в него не заглядывает,
+# и заново закрыть всё, кроме data.json — код по-прежнему ставит скрипт.
+!.obsidian/plugins/file-explorer-plus/
+.obsidian/plugins/file-explorer-plus/*
+!.obsidian/plugins/file-explorer-plus/data.json
+!.obsidian/plugins/obsidian-icon-folder/
+.obsidian/plugins/obsidian-icon-folder/*
+!.obsidian/plugins/obsidian-icon-folder/data.json
+
 # Приватные рабочие материалы автора (планы/спеки/SDD) — не для публичного репо.
 docs/superpowers/
 .superpowers/

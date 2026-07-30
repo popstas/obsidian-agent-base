@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../scripts/lib/repo.mjs';
 
 const manifest = JSON.parse(readFileSync(join(REPO, 'obsidian-plugins.json'), 'utf8'));
 const community = JSON.parse(readFileSync(join(REPO, '.obsidian', 'community-plugins.json'), 'utf8'));
+const pluginData = (id) =>
+  JSON.parse(readFileSync(join(REPO, '.obsidian', 'plugins', id, 'data.json'), 'utf8'));
 
 test('каждая запись манифеста заполнена', () => {
   for (const p of manifest.plugins) {
@@ -24,4 +26,22 @@ test('community-plugins.json совпадает со включёнными в �
 test('ровно один вендоренный плагин', () => {
   const vendored = manifest.plugins.filter((p) => p.vendored).map((p) => p.id);
   assert.deepEqual(vendored, ['tasks-mover']);
+});
+
+// Настройки плагинов Obsidian переписывает целиком при любом изменении в UI,
+// поэтому вендоренные data.json проверяем на то, ради чего их вообще везём.
+test('file-explorer-plus прячет AGENTS.md', () => {
+  const paths = pluginData('file-explorer-plus').hideFilters.paths;
+  const rule = paths.find((f) => f.pattern === 'AGENTS.md');
+  assert.ok(rule, 'в hideFilters.paths нет правила на AGENTS.md');
+  assert.equal(rule.active, true, 'правило на AGENTS.md выключено');
+});
+
+// Ключи верхнего уровня в data.json иконок — это пути к заметкам. Личный вольт
+// приносит сюда свои: так в базу чуть не уехала «Книги/Книги 2026.md».
+test('иконки назначены только существующим файлам', () => {
+  for (const key of Object.keys(pluginData('obsidian-icon-folder'))) {
+    if (key === 'settings') continue;
+    assert.ok(existsSync(join(REPO, key)), `иконка назначена несуществующему пути: ${key}`);
+  }
 });
