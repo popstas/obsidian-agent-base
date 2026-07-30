@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { REPO, extractMarkedRegions } from '../scripts/lib/repo.mjs';
 
@@ -44,8 +45,12 @@ test('хэш каждого демо-блока совпадает с сохра
   }
 });
 
-test('base-only пути существуют', () => {
+// Проверяем по индексу git, а не по диску: на рабочей машине рядом могут лежать
+// незакоммиченные каталоги, и тогда тест зеленеет там, где в свежем клоне падает.
+// Значение имеет только то, что реально приедет пользователю.
+test('base-only пути отслеживаются git', () => {
   for (const rel of manifest.baseOnly) {
-    assert.ok(existsSync(join(REPO, rel)), `нет ${rel}`);
+    const tracked = execFileSync('git', ['ls-files', '--', rel], { cwd: REPO, encoding: 'utf8' }).trim();
+    assert.ok(tracked, `${rel} есть в baseOnly, но не отслеживается git — в клоне его не будет`);
   }
 });
