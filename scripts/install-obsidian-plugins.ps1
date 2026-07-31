@@ -72,8 +72,23 @@ function Invoke-Install {
   }
   $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 
+  # Манифест на месте, но ни одной записи плагина из него не вышло — отказ, а
+  # не тихий успех, тем же текстом и тем же кодом, что в bash-версии. У bash
+  # это реальный сценарий (построчный разбор sed'ом на BSD/macOS может дать
+  # пустые id, и скрипт вышел бы с 0, не напечатав ничего), здесь —
+  # обязательная половина паритета: расхождение "на Windows поставилось всё,
+  # на macOS молча ноль" — ровно тот дефект, который эти скрипты не должны
+  # допускать. @() — чтобы форма была массивом при любом числе совпадений:
+  # конвейер отдаёт $null на нуле и скаляр на единице, и дальше по коду
+  # foreach и .Count не должны зависеть от того, что именно вернулось.
+  $plugins = @($manifest.plugins | Where-Object { $_.id })
+  if ($plugins.Count -eq 0) {
+    [Console]::Error.WriteLine("FAIL: манифест $manifestPath не дал ни одной записи плагина — проверь, что массив plugins не пуст и каждый объект плагина занимает ровно одну строку.")
+    return 1
+  }
+
   if ($DryRun) {
-    foreach ($p in $manifest.plugins) {
+    foreach ($p in $plugins) {
       $kind = if ($p.vendored) { 'vendored' } else { 'remote' }
       [Console]::Out.Write("$($p.id)`t$($p.repo)`t$($p.minVersion)`t$kind`n")
     }
@@ -94,7 +109,7 @@ function Invoke-Install {
   if ($env:GITHUB_TOKEN) { $apiHeaders['authorization'] = "Bearer $env:GITHUB_TOKEN" }
 
   $failed = 0
-  foreach ($p in $manifest.plugins) {
+  foreach ($p in $plugins) {
     $dir = Join-Path $Repo (Join-Path '.obsidian' (Join-Path 'plugins' $p.id))
 
     # Write-Host, а не Write-Output: эти строки — информационные сообщения
