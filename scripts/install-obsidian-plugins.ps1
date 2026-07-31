@@ -45,6 +45,13 @@ function Get-InstalledVersion([string]$Dir) {
   try { return (Get-Content $mf -Raw | ConvertFrom-Json).version } catch { return $null }
 }
 
+function Format-HttpCode([int]$Status) {
+  # Три цифры с ведущими нулями: bash-версия печатает то, чем curl заполняет
+  # %{http_code}, а он при отсутствии ответа даёт "000", не "0". Тексты обеих
+  # реализаций обязаны совпадать до символа.
+  return ('{0:000}' -f $Status)
+}
+
 function Get-HttpFailureText([string]$Id, [int]$Status) {
   if ($Status -eq 403) {
     return "FAIL ${Id}: GitHub ответил 403 — похоже, исчерпан лимит запросов к API без авторизации. Установи GITHUB_TOKEN в окружении, чтобы поднять лимит."
@@ -52,11 +59,18 @@ function Get-HttpFailureText([string]$Id, [int]$Status) {
   if ($Status -eq 404) {
     return "FAIL ${Id}: GitHub ответил 404 — репозиторий мог быть переименован или удалён. Проверь и обнови obsidian-plugins.json."
   }
-  return "FAIL ${Id}: GitHub ответил $Status"
+  return "FAIL ${Id}: GitHub ответил $(Format-HttpCode $Status)"
 }
 
 function Invoke-Install {
-  $manifest = Get-Content (Join-Path $Repo 'obsidian-plugins.json') -Raw | ConvertFrom-Json
+  # Пропавший манифест — явный отказ с тем же текстом, что в bash-версии, а не
+  # исключение Get-Content с многострочным блоком CategoryInfo.
+  $manifestPath = Join-Path $Repo 'obsidian-plugins.json'
+  if (-not (Test-Path $manifestPath)) {
+    [Console]::Error.WriteLine("FAIL: не найден манифест $manifestPath — запускай скрипт из каталога vault.")
+    return 1
+  }
+  $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 
   if ($DryRun) {
     foreach ($p in $manifest.plugins) {
@@ -66,8 +80,18 @@ function Invoke-Install {
     return 0
   }
 
+  # Два набора заголовков: авторизация уходит ТОЛЬКО на вызов API.
+  # Ассеты релиза GitHub отдаёт редиректом на objects.githubusercontent.com с
+  # подписью прямо в URL, и лишний заголовок authorization на таком URL он
+  # штатно отвергает 400-м. curl в bash-версии снимает Authorization на
+  # кросс-хостовом редиректе сам (с 7.58, CVE-2018-1000007), а
+  # Invoke-WebRequest на 5.1 честно пробрасывает его дальше — то есть с
+  # выставленным GITHUB_TOKEN установщик падал бы на каждом скачивании, а сам
+  # токен уезжал бы на CDN-хост. $headers ниже — без авторизации, намеренно.
   $headers = @{ 'user-agent' = 'obsidian-agent-base' }
-  if ($env:GITHUB_TOKEN) { $headers['authorization'] = "Bearer $env:GITHUB_TOKEN" }
+  $apiHeaders = $headers.Clone()
+  $apiHeaders['accept'] = 'application/vnd.github+json'
+  if ($env:GITHUB_TOKEN) { $apiHeaders['authorization'] = "Bearer $env:GITHUB_TOKEN" }
 
   $failed = 0
   foreach ($p in $manifest.plugins) {
@@ -89,8 +113,6 @@ function Invoke-Install {
 
     $tag = $null
     try {
-      $apiHeaders = $headers.Clone()
-      $apiHeaders['accept'] = 'application/vnd.github+json'
       $rel = Invoke-RestMethod -Uri "$Api/repos/$($p.repo)/releases/latest" `
         -Headers $apiHeaders -UseBasicParsing
       $tag = $rel.tag_name
@@ -129,7 +151,7 @@ function Invoke-Install {
         if ($name -eq 'styles.css') { continue }
         $code = 0
         if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
-        [Console]::Error.WriteLine("FAIL $($p.id): не удалось скачать ${name}: HTTP $code")
+        [Console]::Error.WriteLine("FAIL $($p.id): не удалось скачать ${name}: HTTP $(Format-HttpCode $code)")
         $ok = $false
         break
       }

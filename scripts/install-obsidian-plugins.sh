@@ -13,7 +13,7 @@ MANIFEST="$REPO/obsidian-plugins.json"
 # в одну строку. Это условие держит тест в tests/obsidian-plugins.test.mjs.
 # Печатает: id \t repo \t minVersion \t vendored|remote
 parse_manifest() {
-  local line id repo minv kind
+  local line id repo minv kind vend
   # "|| [ -n "$line" ]" — иначе последняя строка без завершающего \n (так
   # пишет JSON.stringify) молча теряется: read возвращает код ошибки, но
   # переменную всё равно заполняет.
@@ -25,8 +25,14 @@ parse_manifest() {
     id=$(printf '%s\n' "$line" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
     repo=$(printf '%s\n' "$line" | sed -n 's/.*"repo"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
     minv=$(printf '%s\n' "$line" | sed -n 's/.*"minVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
-    case "$line" in
-      *'"vendored"'*[Tt]rue*) kind=vendored ;;
+    # Значение "vendored" разбирается так же, как остальные поля, — по ключу.
+    # Позиционный шаблон вида *'"vendored"'*true* ловил бы ЛЮБОЙ true правее
+    # ключа: строка с "vendored": false и "enabled": true читалась бы как
+    # vendored, и плагин молча никогда бы не поставился (на Windows при этом
+    # ставился бы — ConvertFrom-Json разбирает по значению).
+    vend=$(printf '%s\n' "$line" | sed -n 's/.*"vendored"[[:space:]]*:[[:space:]]*\([A-Za-z]*\).*/\1/p')
+    case "$vend" in
+      [Tt]rue) kind=vendored ;;
       *) kind=remote ;;
     esac
     printf '%s\t%s\t%s\t%s\n' "$id" "$repo" "$minv" "$kind"
@@ -61,10 +67,18 @@ compare_versions() {
 API="${OAB_GITHUB_API:-https://api.github.com}"
 DL="${OAB_GITHUB_DOWNLOAD:-https://github.com}"
 
+# Два набора заголовков: авторизация уходит ТОЛЬКО на вызов API.
+# Ассеты релиза GitHub отдаёт редиректом на objects.githubusercontent.com с
+# подписью прямо в URL; лишний заголовок authorization на таком URL GitHub
+# штатно отвергает 400-м. curl снимает пользовательский Authorization на
+# кросс-хостовом редиректе сам (с 7.58, CVE-2018-1000007), а
+# Invoke-WebRequest на Windows PowerShell 5.1 — нет, поэтому разделение
+# сделано явно в обеих реализациях, а не оставлено на поведение клиента.
 curl_args() {
   CURL_ARGS=(-sSL -H "user-agent: obsidian-agent-base")
+  CURL_API_ARGS=("${CURL_ARGS[@]}" -H "accept: application/vnd.github+json")
   if [ -n "${GITHUB_TOKEN:-}" ]; then
-    CURL_ARGS+=(-H "authorization: Bearer $GITHUB_TOKEN")
+    CURL_API_ARGS+=(-H "authorization: Bearer $GITHUB_TOKEN")
   fi
 }
 
@@ -86,14 +100,35 @@ describe_http_failure() {
 }
 
 main() {
+  # Всё, кроме --dry-run, — ошибка: молча игнорировать неизвестный аргумент
+  # опасно, "install-obsidian-plugins.sh -DryRun" (форма Windows-близнеца)
+  # иначе пошёл бы качать по-настоящему. PowerShell-версия на неизвестном
+  # аргументе падает сама.
+  if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != "--dry-run" ]; }; then
+    echo "Неизвестные аргументы: $*" >&2
+    echo "Использование: bash scripts/install-obsidian-plugins.sh [--dry-run]" >&2
+    return 2
+  fi
+
+  # Пропавший манифест — отказ, а не тихий успех: без этой проверки dry-run
+  # возвращал 0, а установочный цикл получал пустой поток и рапортовал, что
+  # всё в порядке.
+  if [ ! -f "$MANIFEST" ]; then
+    echo "FAIL: не найден манифест $MANIFEST — запускай скрипт из каталога vault." >&2
+    return 1
+  fi
+
   if [ "${1:-}" = "--dry-run" ]; then
     parse_manifest "$MANIFEST"
     return 0
   fi
 
   curl_args
-  local failed=0 id repo minv kind dir have tag status body name dir_existed newv
-  local tmp; tmp=$(mktemp)
+  local failed=0 id repo minv kind dir have tag status name dir_existed newv
+  # Шаблон у mktemp обязателен: он не нужен GNU-версии, но BSD/macOS без него
+  # печатает usage и не создаёт файл — tmp оказался бы пустым, и "curl -o ''"
+  # валил бы каждый плагин на основной целевой ОС.
+  local tmp; tmp=$(mktemp "${TMPDIR:-/tmp}/oab.XXXXXX")
   # Разбор идёт через подстановку команды, а не через пайп: пайп уводит цикл
   # в подоболочку, и счётчик failed из неё не возвращается.
   while IFS=$'\t' read -r id repo minv kind; do
@@ -111,8 +146,8 @@ main() {
       continue
     fi
 
-    status=$(curl "${CURL_ARGS[@]}" -o "$tmp" -w '%{http_code}' \
-      -H "accept: application/vnd.github+json" "$API/repos/$repo/releases/latest")
+    status=$(curl "${CURL_API_ARGS[@]}" -o "$tmp" -w '%{http_code}' \
+      "$API/repos/$repo/releases/latest")
     if [ "$status" != "200" ]; then
       describe_http_failure "$id" "$status" >&2
       failed=$((failed + 1))
