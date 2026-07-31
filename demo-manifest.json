@@ -46,7 +46,6 @@
     ".privacy-terms.example",
     "scripts/changelog.mjs",
     "scripts/release.mjs",
-    "scripts/gen-demo-manifest.mjs",
-    "scripts/lib/repo.mjs"
+    "scripts/gen-demo-manifest.mjs"
   ]
 }

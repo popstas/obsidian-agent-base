@@ -55,7 +55,7 @@ test('маркеров демо-блоков в репозитории нет', 
 test('пути чистки живут в манифесте, а не в тексте скилла', () => {
   for (const rel of ['package.json', 'CHANGELOG.md', '.privacy-terms.example',
                      'scripts/changelog.mjs', 'scripts/release.mjs',
-                     'scripts/gen-demo-manifest.mjs', 'scripts/lib/repo.mjs']) {
+                     'scripts/gen-demo-manifest.mjs']) {
     assert.ok(manifest.baseOnly.includes(rel), `${rel} должен быть в baseOnly`);
   }
   const skill = readFileSync(join(REPO, 'skills', 'demo-content-delete', 'SKILL.md'), 'utf8');
