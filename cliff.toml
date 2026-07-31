@@ -44,6 +44,9 @@ commit_parsers = [
   { message = "^docs", group = "Documentation" },
   { message = "^test", group = "Testing" },
   { message = "^refactor", group = "Refactor" },
+  # Без явного правила git-cliff берёт группу из самого типа и прогоняет её
+  # через upper_first — в заголовке релиза получалось "### Ci".
+  { message = "^ci", group = "CI" },
   { message = "^chore", skip = true },
 ]
 tag_pattern = "v[0-9]*"
