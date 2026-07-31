@@ -219,12 +219,13 @@ for (const ps of psRunners) {
 // PowerShell-интерпретатор (см. psRunners выше) — на windows-latest в CI это
 // и pwsh, и Windows PowerShell 5.1 одновременно.
 const RUNNERS = [
-  { name: 'bash', script: 'install-obsidian-plugins.sh', cmd: 'bash', args: [] },
+  { name: 'bash', script: 'install-obsidian-plugins.sh', cmd: 'bash', args: [], dryRun: '--dry-run' },
   ...psRunners.map((ps) => ({
     name: `PowerShell (${ps.label})`,
     script: 'install-obsidian-plugins.ps1',
     cmd: ps.cmd,
     args: ['-NoProfile', '-File'],
+    dryRun: '-DryRun',
     skip: ps.skip || false,
   })),
 ];
@@ -238,20 +239,34 @@ const manifestText = (plugins) =>
   plugins.map((p, i) => '    ' + JSON.stringify(p) + (i < plugins.length - 1 ? ',' : '')).join('\n') +
   '\n  ]\n}\n';
 
+// Манифест, у которого ПОСЛЕДНЯЯ строка несёт плагин и не оканчивается на \n:
+// закрывающие скобки прижаты к последнему объекту, завершающего перевода
+// строки нет. Ровно эта форма отличает построчный парсер с охранником
+// "|| [ -n "$line" ]" от парсера без него — read на неполной последней строке
+// возвращает ненулевой код, но переменную уже заполнил, и без охранника цикл
+// обрывается, потеряв плагин. Обычная фикстура manifestText и настоящий
+// obsidian-plugins.json оканчиваются на \n, а их последняя строка — "}" без
+// "id", поэтому откат охранника они не ловят вообще.
+const manifestTextNoTrailingNewline = (plugins) =>
+  '{\n  "plugins": [\n' +
+  plugins.map((p) => '    ' + JSON.stringify(p)).join(',\n') +
+  ']}';
+
 const DEFAULT_PLUGINS = [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '1.0.0', enabled: true }];
 
 // Готовит песочницу с манифестом (по умолчанию — на один плагин) и копией
 // скрипта, запускает установщик против подменённого GitHub и отдаёт телу
-// теста путь и запускалку.
-async function inSandbox(runner, stubOpts, body, plugins = DEFAULT_PLUGINS) {
+// теста путь и запускалку. build — как сериализовать манифест (null: не
+// класть его вовсе, для проверки отказа на пропавшем манифесте).
+async function inSandbox(runner, stubOpts, body, plugins = DEFAULT_PLUGINS, build = manifestText) {
   const stub = await startGithubStub(stubOpts);
   const sandbox = mkdtempSync(join(tmpdir(), 'oab-'));
   try {
-    writeFileSync(join(sandbox, 'obsidian-plugins.json'), manifestText(plugins));
+    if (build) writeFileSync(join(sandbox, 'obsidian-plugins.json'), build(plugins));
     mkdirSync(join(sandbox, 'scripts'), { recursive: true });
     const script = join(sandbox, 'scripts', runner.script);
     copyFileSync(join(REPO, 'scripts', runner.script), script);
-    const run = () => execFileSync(runner.cmd, [...runner.args, script], {
+    const run = (extra = []) => execFileSync(runner.cmd, [...runner.args, script, ...extra], {
       encoding: 'utf8', stdio: 'pipe',
       env: { ...process.env, OAB_GITHUB_API: stub.api, OAB_GITHUB_DOWNLOAD: stub.download },
     });
@@ -261,6 +276,11 @@ async function inSandbox(runner, stubOpts, body, plugins = DEFAULT_PLUGINS) {
     rmSync(sandbox, { recursive: true, force: true });
   }
 }
+
+// Ожидаемый вывод --dry-run для произвольного набора плагинов: тот же формат,
+// что у dryRunLines выше, но не по настоящему манифесту.
+const expectedDryRun = (plugins) => plugins.map((p) =>
+  [p.id, p.repo, p.minVersion, p.vendored ? 'vendored' : 'remote'].join('\t')).join('\n') + '\n';
 
 for (const runner of RUNNERS) {
   const skip = runner.skip || false;
@@ -316,6 +336,79 @@ for (const runner of RUNNERS) {
         'успешный плагин обязан установиться, несмотря на провал соседнего');
       assert.equal(existsSync(join(sandbox, '.obsidian', 'plugins', 'bad-plugin')), false,
         'за упавшим плагином должно быть убрано');
+
+      // Текст stderr — часть контракта, а не деталь реализации: пользователю
+      // на Windows PowerShell 5.1 нужна ровно одна внятная строка. Возврат к
+      // Write-Error оставил бы все проверки выше зелёными, а в консоли выдал
+      // бы шестистрочный блок с CategoryInfo/FullyQualifiedErrorId вокруг
+      // того же текста (ErrorView в 5.1 по умолчанию NormalView).
+      assert.match(err.stderr, /FAIL bad-plugin: GitHub ответил 404/,
+        `в stderr нет строки про 404 по bad-plugin: ${JSON.stringify(err.stderr)}`);
+      assert.doesNotMatch(err.stderr, /CategoryInfo/,
+        'stderr содержит CategoryInfo — сообщение печатается через Write-Error вместо ' +
+        '[Console]::Error.WriteLine, пользователь получит многострочный блок вместо одной строки: ' +
+        JSON.stringify(err.stderr));
     }, plugins);
   });
+
+  // Единственная ветка, регресс в которой уничтожает данные: каталог плагина
+  // существовал ДО запуска (рабочая установка), обновление провалилось —
+  // трогать его нельзя. Удаление проверки dir_existed / $dirExisted снесло бы
+  // рабочий плагин при любом неудачном обновлении, и молча: все остальные
+  // тесты остались бы зелёными.
+  test(`${runner.name}: провал не трогает каталог, существовавший до запуска`, { skip }, async () => {
+    await inSandbox(runner, { tag: '9.9.9', assets: {} }, ({ sandbox, run }) => {
+      const dir = join(sandbox, '.obsidian', 'plugins', 'stub-plugin');
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, 'marker.txt'), 'ранее установленный плагин');
+
+      assert.throws(run, 'скрипт обязан выйти с ненулевым кодом: ассетов в стенде нет');
+      assert.equal(existsSync(join(dir, 'marker.txt')), true,
+        'провалившееся обновление снесло каталог, которого не создавало — потеря рабочей установки плагина');
+      assert.equal(readFileSync(join(dir, 'marker.txt'), 'utf8'), 'ранее установленный плагин');
+    });
+  });
+
+  // Дискриминирующий манифест для разбора "vendored": значение false стоит
+  // ЛЕВЕЕ "enabled": true, а true — левее "enabled": false. Позиционный разбор
+  // ("любой true правее ключа") дал бы здесь vendored на первой записи и
+  // разошёлся бы с ConvertFrom-Json. По настоящему obsidian-plugins.json это
+  // не ловится: единственная vendored-запись в нём истинна и стоит последней.
+  test(`${runner.name}: "vendored" разбирается по значению, а не позиционно`, { skip }, async () => {
+    const plugins = [
+      { id: 'not-vendored', vendored: false, repo: 'owner/nv', minVersion: '1.0.0', enabled: true },
+      { id: 'really-vendored', vendored: true, repo: 'owner/rv', minVersion: '2.0.0', enabled: false },
+      { id: 'no-key', repo: 'owner/nk', minVersion: '3.0.0', enabled: true },
+    ];
+    await inSandbox(runner, {}, ({ run }) => {
+      assert.equal(run([runner.dryRun]).replace(/\r\n/g, '\n'), expectedDryRun(plugins));
+    }, plugins);
+  });
+
+  test(`${runner.name}: последняя строка манифеста без завершающего перевода строки не теряется`, { skip }, async () => {
+    const plugins = [
+      { id: 'first', repo: 'owner/first', minVersion: '1.0.0', enabled: true },
+      { id: 'last', repo: 'owner/last', minVersion: '2.0.0', enabled: true },
+    ];
+    await inSandbox(runner, {}, ({ run }) => {
+      assert.equal(run([runner.dryRun]).replace(/\r\n/g, '\n'), expectedDryRun(plugins));
+    }, plugins, manifestTextNoTrailingNewline);
+  });
+
+  // Пропавший манифест — отказ, а не тихий успех: без явной проверки bash
+  // возвращал 0 (редирект "< файл" падал, но код никто не смотрел), и
+  // установочный цикл рапортовал, что всё в порядке, ничего не поставив.
+  for (const mode of ['установка', '--dry-run']) {
+    test(`${runner.name}: пропавший манифест — явная ошибка (${mode})`, { skip }, async () => {
+      await inSandbox(runner, {}, ({ run }) => {
+        let err;
+        try { run(mode === '--dry-run' ? [runner.dryRun] : []); } catch (e) { err = e; }
+        assert.ok(err, 'без манифеста скрипт обязан выйти с ненулевым кодом, а не отрапортовать успех');
+        assert.match(err.stderr, /не найден манифест/,
+          `в stderr нет объяснения про манифест: ${JSON.stringify(err.stderr)}`);
+        assert.doesNotMatch(err.stderr, /CategoryInfo/,
+          'stderr содержит CategoryInfo — вместо внятной строки пользователь получит исключение PowerShell');
+      }, DEFAULT_PLUGINS, null);
+    });
+  }
 }

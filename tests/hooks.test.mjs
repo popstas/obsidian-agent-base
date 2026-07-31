@@ -54,6 +54,16 @@ test('codex-хук на bash печатает тот же путь лога, ч�
   assert.ok(ctx.includes(expectedLogPath()), `в подсказке нет ${expectedLogPath()}: ${ctx}`);
 });
 
+// Совпадения пути лога мало: сама формулировка подсказки — тоже контракт, и
+// три реализации (.mjs у Claude, .sh и .ps1 у Codex) обязаны говорить одно и
+// то же. Правку текста в одной из них без правки остальных ничто иначе не
+// ловит — .ps1 сверяется с .sh ниже, а .mjs не сверялся ни с чем.
+test('codex-хук на bash и Claude-хук на Node печатают один и тот же объект', () => {
+  const sh = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
+  const mjs = execFileSync(process.execPath, [join(REPO, '.claude', 'hooks', 'tasks-startup.mjs')], { encoding: 'utf8' });
+  assert.deepStrictEqual(JSON.parse(sh).hookSpecificOutput, JSON.parse(mjs).hookSpecificOutput);
+});
+
 // Два разных PowerShell-интерпретатора, оба реальные целевые среды — тот же
 // подход, что в tests/obsidian-plugins.test.mjs: pwsh хардкодить нельзя,
 // на чистой Windows есть только powershell (Windows PowerShell 5.1).
