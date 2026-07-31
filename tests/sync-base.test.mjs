@@ -25,3 +25,21 @@ test('findLocal резолвит любой локальный "*-vault" как 
   assert.equal(found.name, 'work-vault');
   assert.equal(found.path, join('tests/fixtures/alias-skills', 'work-vault', 'SKILL.md'));
 });
+
+test('пути в lock пишутся POSIX-разделителями, читаются любые', () => {
+  assert.equal(sync.toLockPath(join('skills', 'close-task', 'SKILL.md')),
+    'skills/close-task/SKILL.md');
+  // lock, созданный на Windows, должен читаться на POSIX без ручной правки
+  assert.equal(sync.fromLockPath('skills\\close-task\\SKILL.md'),
+    join('skills', 'close-task', 'SKILL.md'));
+  assert.equal(sync.fromLockPath('skills/close-task/SKILL.md'),
+    join('skills', 'close-task', 'SKILL.md'));
+});
+
+test('untrackedLocalSkills находит локальные скиллы, которых нет в base', () => {
+  const lock = { baseSync: { local: { skillsDir: 'tests/fixtures/alias-skills' } } };
+  // фикстура содержит ровно один скилл — work-vault
+  assert.deepEqual(sync.untrackedLocalSkills(lock, {}), ['work-vault']);
+  const mapped = { 'obsidian-vault': { localName: 'work-vault' } };
+  assert.deepEqual(sync.untrackedLocalSkills(lock, mapped), []);
+});

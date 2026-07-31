@@ -15,7 +15,7 @@
 // Запускается из корня наследника: node .claude/sync-base.cjs <cmd>
 
 const { readFileSync, writeFileSync, existsSync, readdirSync, statSync } = require("fs");
-const { join, dirname, isAbsolute } = require("path");
+const { join, dirname, isAbsolute, sep } = require("path");
 const { createHash } = require("crypto");
 const { spawnSync } = require("child_process");
 
@@ -43,6 +43,23 @@ function readLock() {
 
 function writeLock(lock) {
   writeFileSync(LOCK, JSON.stringify(lock, null, 2) + "\n");
+}
+
+// skills-lock.json переносится между машинами, поэтому пути внутри него всегда
+// POSIX-овые. join() на Windows дал бы "skills\close-task\SKILL.md", и на
+// macOS/Linux такой lock превратился бы в имя файла с обратными слэшами.
+function toLockPath(rel) {
+  return rel.split(/[\\/]/).join("/");
+}
+
+// Обратное преобразование. Принимает оба разделителя: lock мог быть создан
+// на другой ОС, и чинить его руками пользователь не должен.
+function fromLockPath(rel) {
+  return rel.split(/[\\/]/).join(sep);
+}
+
+function lockLocalFile(rel) {
+  return join(ROOT, fromLockPath(rel));
 }
 
 // Нормализуем содержимое SKILL.md и считаем sha256.
@@ -131,6 +148,22 @@ function listBaseSkills(baseRoot) {
   });
 }
 
+function listLocalSkills(lock) {
+  const dir = localSkillsDir(lock);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((n) => {
+    try { return statSync(join(dir, n, "SKILL.md")).isFile(); } catch { return false; }
+  }).sort();
+}
+
+// Локальные скиллы, не сопоставленные ни с одним скиллом base. Обычно это значит,
+// что клон base стоит на другой ветке или отстал: их правки bootstrap не отследит,
+// и при обновлении base они пропадут молча.
+function untrackedLocalSkills(lock, skills) {
+  const mapped = new Set(Object.values(skills).map((s) => s.localName).filter(Boolean));
+  return listLocalSkills(lock).filter((n) => !mapped.has(n));
+}
+
 // ---------- классификация ----------
 // B = base сейчас, Bsync = base на момент sync, L = local сейчас, Lsync = local на момент sync
 function classify(entry, baseHashNow, localHashNow) {
@@ -161,7 +194,7 @@ function cmdStatus(jsonOut) {
     const entry = entries[baseName] || null;
     const baseHashNow = hashFile(baseSkillFile(baseRoot, baseName));
     const local = entry && entry.localPath
-      ? { name: entry.localName, path: join(ROOT, entry.localPath) }
+      ? { name: entry.localName, path: lockLocalFile(entry.localPath) }
       : findLocalFull(lock, baseName);
     const localHashNow = local ? hashFile(local.path) : null;
     const state = classify(entry, baseHashNow, localHashNow);
@@ -212,7 +245,7 @@ function cmdDiff(skill) {
   const entry = entries[skill] || null;
   const baseFile = baseSkillFile(baseRoot, skill);
   const local = entry && entry.localPath
-    ? { path: join(ROOT, entry.localPath) }
+    ? { path: lockLocalFile(entry.localPath) }
     : findLocalFull(lock, skill);
   if (!existsSync(baseFile)) fail(`В base нет скилла ${skill}`);
   if (!local || !existsSync(local.path)) fail(`Локально нет скилла ${skill}`);
@@ -254,7 +287,7 @@ function cmdBootstrap() {
       continue;
     }
     const localHash = hashFile(local.path);
-    const relLocal = join(localSkillsRel(lock), local.name, "SKILL.md");
+    const relLocal = toLockPath(join(localSkillsRel(lock), local.name, "SKILL.md"));
     skills[baseName] = {
       baseName,
       localName: local.name,
@@ -271,6 +304,13 @@ function cmdBootstrap() {
     if (v.status === "not-imported") console.log(`  ${k}: not-imported`);
     else console.log(`  ${k} -> ${v.localName}${v.customized ? " [customized]" : ""}`);
   }
+  const untracked = untrackedLocalSkills(lock, skills);
+  if (untracked.length) {
+    console.log("");
+    console.log(`⚠ Локальных скиллов вне base ${commit || "(нет git)"}: ${untracked.length} — не отслеживаются:`);
+    console.log(`  ${untracked.join(", ")}`);
+    console.log("  Проверь, на той ли ветке клон base.");
+  }
   console.log(`\nЗаписан ${LOCK}`);
 }
 
@@ -282,7 +322,7 @@ function cmdStamp(skill) {
   if (!entries || !entries[skill]) fail(`Нет записи baseSync для ${skill}. Запусти bootstrap.`);
   const entry = entries[skill];
   const baseHash = hashFile(baseSkillFile(baseRoot, skill));
-  const localHash = entry.localPath ? hashFile(join(ROOT, entry.localPath)) : null;
+  const localHash = entry.localPath ? hashFile(lockLocalFile(entry.localPath)) : null;
   entry.baseHashAtSync = baseHash;
   entry.localHashAtSync = localHash;
   entry.customized = localHash !== null && localHash !== baseHash;
@@ -292,7 +332,7 @@ function cmdStamp(skill) {
 
 function fail(msg) { console.error("Ошибка: " + msg); process.exit(1); }
 
-module.exports = { rawHash, classify, localSkillsDir, localSkillsRel, findLocal };
+module.exports = { rawHash, classify, localSkillsDir, localSkillsRel, findLocal, toLockPath, fromLockPath, untrackedLocalSkills };
 
 if (require.main === module) {
   const [cmd, ...rest] = process.argv.slice(2);
