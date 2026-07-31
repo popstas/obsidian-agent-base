@@ -73,6 +73,33 @@ test('нет промежуточного чекбокса `- [/]`', () => {
   assert.deepEqual(scan(INTERMEDIATE_CHECKBOX), []);
 });
 
+// list-tasks и weekly-review оба классифицируют задачи по одному и тому же
+// порогу возраста «старых» задач — list-tasks в обзоре, weekly-review в шаге
+// 3 (признак «Долгожитель»). Если наследник меняет порог в одном скилле и
+// забывает про другой, list-tasks и weekly-review начинают спорить о статусе
+// одной и той же задачи. Число не хардкодим (наследник вправе сменить 14 на
+// своё), сверяем только равенство между файлами.
+function ageThreshold(relPath) {
+  const text = readFileSync(join(REPO, relPath), 'utf8');
+  const matches = [...text.matchAll(/старше (\d+) дней/g)];
+  assert.equal(
+    matches.length,
+    1,
+    `ожидался ровно один порог возраста («старше N дней») в ${relPath}, найдено ${matches.length}`
+  );
+  return Number(matches[0][1]);
+}
+
+test('порог "старых" задач одинаков в list-tasks и weekly-review', () => {
+  const listTasks = ageThreshold('skills/list-tasks/SKILL.md');
+  const weeklyReview = ageThreshold('skills/weekly-review/SKILL.md');
+  assert.equal(
+    listTasks,
+    weeklyReview,
+    `list-tasks считает старой задачу старше ${listTasks} дней, weekly-review — старше ${weeklyReview} дней`
+  );
+});
+
 test('нет личных маркеров (домашних путей, email) в скиллах и корневых документах', () => {
   const hits = [...scan(HOME_PATH), ...scan(EMAIL)];
   assert.deepEqual([...new Set(hits)].sort(), []);
