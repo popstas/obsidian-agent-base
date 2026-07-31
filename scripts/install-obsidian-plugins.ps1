@@ -167,6 +167,18 @@ function Invoke-Install {
     if (-not $newv) { $newv = '?' }
     if ($have) { Write-Host "installed $($p.id) — обновлён $have → $newv" }
     else { Write-Host "installed $($p.id) ($newv)" }
+
+    # Ассеты релиза не обязаны совпадать версией с тегом релиза: у dataview
+    # tag_name latest-релиза был 0.5.70, а manifest.json внутри того же
+    # релиза нёс version 0.5.68 — реальный случай, не гипотетический. Если
+    # newv всё ещё ниже minVersion, скачивание прошло успешно, но требование
+    # манифеста этим репозиторием недостижимо: без этой проверки скрипт при
+    # каждом запуске молча перекачивал бы те же файлы заново, бесконечно не
+    # продвигаясь. newv='?' пропускаем — сравнивать плейсхолдер с версией
+    # числом нечего, и ложное предупреждение хуже отсутствующего.
+    if ($newv -ne '?' -and (Compare-PluginVersion $newv $p.minVersion) -eq -1) {
+      [Console]::Error.WriteLine("WARN $($p.id): установлена версия $newv, но манифест требует $($p.minVersion) — такая версия недостижима из релизных ассетов $($p.repo) (тег релиза и manifest.json внутри него расходятся version'ом). Поправь minVersion в obsidian-plugins.json на версию, которую реально отдают ассеты.")
+    }
   }
 
   if ($failed -gt 0) {

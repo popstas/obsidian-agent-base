@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, copyFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -281,11 +281,21 @@ async function inSandbox(runner, stubOpts, body, plugins = DEFAULT_PLUGINS, buil
     mkdirSync(join(sandbox, 'scripts'), { recursive: true });
     const script = join(sandbox, 'scripts', runner.script);
     copyFileSync(join(REPO, 'scripts', runner.script), script);
+    const env = { ...process.env, OAB_GITHUB_API: stub.api, OAB_GITHUB_DOWNLOAD: stub.download };
     const run = (extra = []) => execFileSync(runner.cmd, [...runner.args, script, ...extra], {
-      encoding: 'utf8', stdio: 'pipe',
-      env: { ...process.env, OAB_GITHUB_API: stub.api, OAB_GITHUB_DOWNLOAD: stub.download },
+      encoding: 'utf8', stdio: 'pipe', env,
     });
-    body({ sandbox, run });
+    // execFileSync отдаёт stderr только когда процесс падает (через
+    // err.stderr в исключении) — на успешном (код 0) запуске stderr
+    // недоступен вообще. Предупреждение о недостижимом minVersion печатается
+    // именно на успешном запуске (файлы ставятся, код 0), поэтому нужен
+    // отдельный помощник на spawnSync, который отдаёт stdout/stderr/status
+    // независимо от того, упал процесс или нет.
+    const runCapture = (extra = []) => {
+      const r = spawnSync(runner.cmd, [...runner.args, script, ...extra], { encoding: 'utf8', env });
+      return { stdout: r.stdout, stderr: r.stderr, status: r.status };
+    };
+    body({ sandbox, run, runCapture });
   } finally {
     await stub.close();
     rmSync(sandbox, { recursive: true, force: true });
@@ -451,14 +461,54 @@ for (const runner of RUNNERS) {
     });
   }
 
-  // Регресс, реально найденный на живой Windows PowerShell 5.1: без
-  // [CmdletBinding()] непривязанный аргумент ("--dry-run" в unix-стиле по
-  // привычке, любая опечатка) молча оседает в $args, ошибки биндинга не
-  // происходит — скрипт спокойно шёл в настоящую установку вместо отказа.
-  // bash-версия эту дыру уже закрывала (см. "пропавший манифест" выше);
-  // здесь — паритет обеих реализаций. Стенд отдаёт настоящие ассеты, поэтому
-  // если проверка аргументов отсутствует или сломана, каталог плагина
-  // реально появится на диске, а не просто выживет какая-то ошибка позже.
+  // Регресс на реальный случай: tag_name latest-релиза dataview был 0.5.70,
+  // а manifest.json ВНУТРИ этого же релиза нёс version 0.5.68 — тег и ассет
+  // разошлись. Пока minVersion манифеста совпадает с тем, что реально даёт
+  // ассет, это незаметно; но стоит поднять minVersion до тега (естественный
+  // шаг после взгляда на "последний релиз" на GitHub) — и скрипт при КАЖДОМ
+  // запуске молча перекачивал бы те же файлы заново, никогда не сходясь.
+  // Предупреждение — не провал: файлы реально скачались и легли на диск,
+  // причина не в сети и не в GitHub, а в самом манифесте, поэтому код
+  // возврата остаётся 0, а сигнал уходит в stderr.
+  test(`${runner.name}: недостижимый minVersion — предупреждение в stderr, файлы всё равно ставятся, код возврата 0`, { skip }, async () => {
+    await inSandbox(runner, {
+      tag: '9.9.9',
+      assets: { 'manifest.json': '{"version":"0.5.68"}', 'main.js': 'console.log(1)' },
+    }, ({ sandbox, runCapture }) => {
+      const r = runCapture();
+      assert.equal(r.status, 0, `код возврата обязан остаться 0: ${JSON.stringify(r)}`);
+
+      const dir = join(sandbox, '.obsidian', 'plugins', 'stub-plugin');
+      assert.equal(readFileSync(join(dir, 'main.js'), 'utf8'), 'console.log(1)',
+        'файлы обязаны установиться, несмотря на недостижимый minVersion — предупреждение не отменяет установку');
+      assert.match(r.stdout, /installed stub-plugin/,
+        `в stdout нет строки об установке: ${JSON.stringify(r.stdout)}`);
+
+      assert.match(r.stderr, /WARN stub-plugin: установлена версия 0\.5\.68, но манифест требует 0\.5\.70/,
+        `в stderr нет предупреждения о недостижимом minVersion: ${JSON.stringify(r.stderr)}`);
+      assert.doesNotMatch(r.stderr, /CategoryInfo/,
+        'stderr содержит CategoryInfo — предупреждение печатается не той функцией, что даёт паритет с bash');
+    }, [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '0.5.70', enabled: true }]);
+  });
+
+  // "?" — тот же плейсхолдер, что и в info-строке "installed", когда
+  // manifest.json не читается вовсе (пустые ассеты). Сравнивать "?" с
+  // minVersion численно нечего: ложное предупреждение хуже отсутствующего,
+  // поэтому в этом случае WARN не печатается.
+  test(`${runner.name}: newv="?" не порождает WARN о недостижимом minVersion`, { skip }, async () => {
+    await inSandbox(runner, {
+      tag: '9.9.9',
+      assets: { 'manifest.json': '{}', 'main.js': 'console.log(1)' },
+    }, ({ runCapture }) => {
+      const r = runCapture();
+      assert.equal(r.status, 0, `код возврата обязан остаться 0: ${JSON.stringify(r)}`);
+      assert.match(r.stdout, /installed stub-plugin \(\?\)/,
+        `в stdout нет строки об установке с плейсхолдером версии: ${JSON.stringify(r.stdout)}`);
+      assert.doesNotMatch(r.stderr, /WARN stub-plugin/,
+        `WARN не должен печататься, когда версия неизвестна ("?"): ${JSON.stringify(r.stderr)}`);
+    }, [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '0.5.70', enabled: true }]);
+  });
+
   test(`${runner.name}: неизвестный аргумент — явная ошибка, установка не идёт`, { skip }, async () => {
     await inSandbox(runner, {
       tag: '9.9.9',
