@@ -182,5 +182,17 @@ function Invoke-Install {
 # Скрипт можно точечно исходить (dot-source) — тогда Invoke-Install не
 # запускается и тесты получают доступ к отдельным функциям.
 if ($MyInvocation.InvocationName -ne '.') {
+  # Без [CmdletBinding()] это простая команда: параметр, не привязанный к
+  # объявленному -DryRun (например, unix-привычный "--dry-run" или любой
+  # опечатанный флаг), не вызывает ошибку биндинга, а молча оседает в
+  # автоматической переменной $args. Подтверждено на живой Windows
+  # PowerShell 5.1: "install-obsidian-plugins.ps1 --dry-run" проходил мимо
+  # -DryRun и шёл в настоящую установку. Проверка обязана стоять до
+  # Invoke-Install — то есть до первого сетевого вызова.
+  if ($args.Count -gt 0) {
+    [Console]::Error.WriteLine("Неизвестные аргументы: $($args -join ' ')")
+    [Console]::Error.WriteLine('Использование: powershell -File scripts\install-obsidian-plugins.ps1 [-DryRun]')
+    exit 2
+  }
   exit (Invoke-Install)
 }

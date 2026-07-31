@@ -57,6 +57,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-obsidian-plu
 - **`base-sync`** (`node .claude/sync-base.cjs`, см. ниже) — необязательный
   сценарий подтягивания обновлений скиллов в уже адаптированный vault. Оставлен
   на Node осознанно: к нему обращаются, только когда base ушёл вперёд.
+
 Не хочешь терминал — Obsidian поставит все плагины из `obsidian-plugins.json`
 сам: Settings → Community plugins → Browse.
 

@@ -57,6 +57,7 @@ neither is part of the daily loop:
 - **`base-sync`** (`node .claude/sync-base.cjs`, see below) — the optional
   workflow for pulling upstream skill updates into a customized vault. Kept on
   Node deliberately; you only reach for it when base has moved on.
+
 Prefer clicking? Obsidian can install every plugin from
 `obsidian-plugins.json` through Settings → Community plugins → Browse.
 
