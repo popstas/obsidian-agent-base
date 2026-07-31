@@ -40,6 +40,13 @@
     "tests",
     ".githooks",
     ".github",
-    "cliff.toml"
+    "cliff.toml",
+    "package.json",
+    "CHANGELOG.md",
+    ".privacy-terms.example",
+    "scripts/changelog.mjs",
+    "scripts/release.mjs",
+    "scripts/gen-demo-manifest.mjs",
+    "scripts/lib/repo.mjs"
   ]
 }

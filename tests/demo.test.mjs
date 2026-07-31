@@ -48,3 +48,19 @@ test('маркеров демо-блоков в репозитории нет', 
   });
   assert.deepEqual(found, [], 'демо-блоки распущены — маркеры не должны возвращаться');
 });
+
+// Манифест — единственный источник правды о том, что удаляется. Пока пути жили
+// ещё и в тексте скилла, списки разошлись: package.json и CHANGELOG.md были
+// только в скилле, а скрипты релиза базы — нигде.
+test('пути чистки живут в манифесте, а не в тексте скилла', () => {
+  for (const rel of ['package.json', 'CHANGELOG.md', '.privacy-terms.example',
+                     'scripts/changelog.mjs', 'scripts/release.mjs',
+                     'scripts/gen-demo-manifest.mjs', 'scripts/lib/repo.mjs']) {
+    assert.ok(manifest.baseOnly.includes(rel), `${rel} должен быть в baseOnly`);
+  }
+  const skill = readFileSync(join(REPO, 'skills', 'demo-content-delete', 'SKILL.md'), 'utf8');
+  assert.ok(!/`package\.json`/.test(skill),
+    'скилл не должен называть package.json — путь живёт в манифесте');
+  assert.ok(!/`CHANGELOG\.md`/.test(skill),
+    'скилл не должен называть CHANGELOG.md — путь живёт в манифесте');
+});
