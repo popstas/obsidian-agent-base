@@ -98,6 +98,13 @@ New-Item -ItemType Junction `
 Подставь в `-Target` (и в `ln -s`) тот каталог, где скиллы лежат на самом деле:
 `skills` в корне для клона базы, `.claude\skills` — если они там.
 
+**Windows: связь ставится только на локальном томе.** Если vault лежит на
+подключённом сетевом или мапленном диске, junction не создаётся —
+`New-Item` отвечает `Local NTFS volumes are required to complete the operation`.
+Запасной путь через `-ItemType SymbolicLink` тоже не выручит: на Windows он
+требует прав администратора (`NewItemSymbolicLinkElevationRequired`). Рабочий
+обход один — перенести vault на локальный том и повторить команду там.
+
 Проверка: `ls .agents/skills` (`dir .agents\skills`) показывает папки скиллов; в сессии
 Codex они вызываются как `$new-task`, `$worklog` и т.д.
 
@@ -455,8 +462,24 @@ Codex, но не у Claude Code, поэтому одной строкой две
 
 Адаптация под пользователя — разовая. Дальше base развивается, и наследник должен уметь подтягивать обновления, не теряя свои кастомизации. Для этого нужны скрипт `.claude/sync-base.cjs` и скилл `base-sync` — в режиме 1 (клон базы) они уже в vault, копировать не нужно; в режиме 3 (только скиллы) добавь их, если пользователь хочет отслеживать обновления base.
 
-1. Один раз: `node .claude/sync-base.cjs bootstrap` — заводит блок `baseSync` в `skills-lock.json`, сопоставляет локальные имена с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), помечает уже разошедшиеся скиллы `customized: true`, отсутствующие у наследника — `status: "not-imported"`. Путь к base — в `baseSync.base.path` (дефолт `../../obsidian-agent-base`); поправь, если base лежит иначе.
-2. Дальше по запросу через скилл `base-sync`: `status` (сводка), `diff <skill>`, `stamp <skill>`.
+1. Сразу после клона — развести remote, чтобы личный vault не уехал в публичную базу:
+
+   ```bash
+   git remote rename origin upstream
+   git remote set-url --push upstream DISABLED
+   git branch --unset-upstream
+   ```
+
+   `upstream` остаётся для `git fetch` за обновлениями базы. Свой приватный remote,
+   если он нужен, добавляй отдельно под именем `origin`.
+2. Один раз: `node .claude/sync-base.cjs bootstrap` — заводит блок `baseSync` в `skills-lock.json`, сопоставляет локальные имена с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), помечает уже разошедшиеся скиллы `customized: true`, отсутствующие у наследника — `status: "not-imported"`. Путь к base — в `baseSync.base.path` (дефолт `../../obsidian-agent-base`); поправь, если base лежит иначе.
+
+   Клон base должен физически лежать по этому пути **до** запуска: `bootstrap` не
+   скачивает его сам и падает с «Не найден base». И следи за веткой клона — bootstrap
+   видит только те скиллы, что есть в base на его текущем коммите; про остальные
+   локальные скиллы он теперь предупреждает отдельной строкой, но в lock они не
+   попадут, и их правки при обновлении base не отследятся.
+3. Дальше по запросу через скилл `base-sync`: `status` (сводка), `diff <skill>`, `stamp <skill>`.
 
 `skills-lock.json` v2 совместим с v1: блок внешних github-скиллов (`skills`) не трогается. Хэш скилла считается без `name:`/`description:` — эти строки у наследников легитимно разные. Кастомизации (путь лога, секции `# Week:`, переименованный vault-скилл) при `BASE-CHANGED`/`BOTH-CHANGED` сохраняются вручную через скилл, скрипт сам `SKILL.md` не правит.
 
@@ -474,6 +497,8 @@ Codex, но не у Claude Code, поэтому одной строкой две
 - [ ] `settings.json` смерджен, а не перезаписан.
 - [ ] Если пользователь работает через Codex — `.agents/skills` создан и указывает на
       каталог со скиллами (см. раздел выше).
+- [ ] `git remote -v` не показывает публичную базу под именем `origin` с рабочим
+      push-адресом.
 - [ ] Если пользователь работает через Codex — в `~/.codex/config.toml` включено
       `[features] hooks = true`, и на первом запуске подтверждено доверие
       `.codex/hooks.json`.
