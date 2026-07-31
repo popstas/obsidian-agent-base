@@ -140,3 +140,46 @@ test('index.md существует, и его wikilinks резолвятся', 
   );
   assert.deepEqual(names.filter((n) => !known.has(n)), [], 'битые wikilinks в index.md');
 });
+
+// Справка по хоткеям — цель онбординг-задачи «Посмотреть полезные хоткеи» в
+// tasks.md, то есть первое, куда новый пользователь идёт за раскладкой. Она
+// уже успела разойтись с .obsidian/hotkeys.json молча: хоткеи добавили, в
+// заметку не дописали. Проверка односторонняя — каждый назначенный хоткей
+// обязан быть в заметке, но не наоборот: описать полезный дефолт Obsidian,
+// которого в hotkeys.json нет, законно.
+const MOD_ORDER = ['Mod', 'Shift', 'Alt'];
+const MOD_TEXT = { Mod: 'Ctrl', Shift: 'Shift', Alt: 'Alt' };
+const KEY_TEXT = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
+
+// Модификатор, которого нет в MOD_TEXT, обязан уронить тест, а не тихо
+// выпасть из комбинации: иначе Meta+K превратился бы в «K», нашёлся бы в
+// заметке по случайному совпадению и пропал бы из-под проверки.
+function renderBinding(command, b) {
+  const mods = b.modifiers || [];
+  const unknown = mods.filter((m) => !(m in MOD_TEXT));
+  assert.deepEqual(unknown, [], `неизвестный модификатор в ${command} — допиши его в MOD_TEXT/MOD_ORDER`);
+  return [...MOD_ORDER.filter((m) => mods.includes(m)).map((m) => MOD_TEXT[m]), KEY_TEXT[b.key] ?? b.key].join('+');
+}
+
+test('справка по хоткеям описывает все назначенные хоткеи', () => {
+  // Заметку ищем по имени в индексе git, а не по захардкоженному пути: она
+  // лежит в датированном каталоге Notes/<год>/<месяц>/ и переезд туда, куда
+  // её решит положить наследник, ломать тест не должен.
+  const notes = execFileSync('git', ['ls-files', '-z', '*.md'], { cwd: REPO, encoding: 'utf8' })
+    .split('\0').filter(Boolean)
+    .filter((p) => basename(p, '.md') === 'Хоткеи');
+  assert.equal(notes.length, 1, `ожидалась ровно одна заметка «Хоткеи», найдено: ${notes.join(', ') || 'ни одной'}`);
+  const note = readFileSync(join(REPO, notes[0]), 'utf8');
+
+  const hotkeys = JSON.parse(readFileSync(join(REPO, '.obsidian', 'hotkeys.json'), 'utf8'));
+  const missing = [];
+  for (const [command, binds] of Object.entries(hotkeys)) {
+    for (const b of binds) {
+      const combo = renderBinding(command, b);
+      // Ищем комбинацию в бэктиках — так она набрана в заметке, и так
+      // «Ctrl+D» не засчитывается по вхождению внутрь «Ctrl+Shift+Alt+D».
+      if (!note.includes(`\`${combo}\``)) missing.push(`${command} → ${combo}`);
+    }
+  }
+  assert.deepEqual(missing, [], `хоткеи не описаны в ${notes[0]}`);
+});
