@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { REPO } from '../scripts/lib/repo.mjs';
 import { startGithubStub } from './helpers/github-stub.mjs';
+import { BASH } from './helpers/bash.mjs';
 
 // Два разных PowerShell-интерпретатора, оба реальные целевые среды:
 // pwsh — кросс-платформенный PowerShell 7+, есть на Linux/macOS и на обоих
@@ -112,6 +113,17 @@ test('каждый плагин в манифесте занимает одну 
   for (const line of objectLines) {
     assert.match(line.trim(), /^\{.*\},?$/,
       `объект плагина не помещается в одну строку: ${line.trim()}`);
+    // Ровно эти строки bash-установщик прогоняет через четыре sed'а. На
+    // macOS это BSD sed с BSD же локалью — поведение на многобайтовых
+    // символах не то же, что у GNU, а цена расхождения (см. тест на манифест
+    // без записей) — ноль плагинов и невнятный отказ там, где Windows ставит
+    // всё. Русские пояснения к плагинам живут на строке "$comment": её
+    // парсер отбрасывает ДО первого sed.
+    // trim() — на случай CRLF в рабочем дереве: \r не про кодировку и в этой
+    // проверке был бы ложным срабатыванием.
+    assert.match(line.trim(), /^[\x20-\x7e]*$/,
+      `на разбираемой строке манифеста есть не-ASCII — перенеси текст на строку "$comment", ` +
+      `её построчный парсер bash-установщика пропускает до всякого sed: ${line.trim()}`);
   }
 });
 
@@ -125,7 +137,12 @@ test('вызов main внизу bash-установщика используе�
   assert.match(text, /main\s+\$\{1:?\+"\$@"\}/,
     'нижний вызов main должен использовать идиому ${1+"$@"} (или ${1:+"$@"}) — она безопасна под set -u ' +
     'на bash 3.2 (macOS) и при этом ноль аргументов остаётся нулём аргументов, а не одной пустой строкой');
-  assert.doesNotMatch(text, /main\s+"\$@"/,
+  // Якорь на начало строки (/m) — намеренно: без него проверка сканирует весь
+  // файл вместе с комментариями, и любая правка комментария выше main,
+  // упомянувшая эту идиому дословно ("не пиши main "$@""), валила бы тест с
+  // сообщением, указывающим на код, а не на комментарий. Ловим позицию
+  // оператора, а не упоминание строки.
+  assert.doesNotMatch(text, /^\s*main\s+"\$@"/m,
     'найден голый main "$@" — на bash 3.2 (macOS) это падает под set -u при нуле аргументов ещё до входа ' +
     'в main; замени на main ${1+"$@"}');
 });
@@ -189,15 +206,27 @@ test('каждый .ps1 в репозитории переустанавлива
 const dryRunLines = () => manifest.plugins.map((p) =>
   [p.id, p.repo, p.minVersion, p.vendored ? 'vendored' : 'remote'].join('\t')).join('\n') + '\n';
 
+// Наблюдаемость bash-раннера. Зелёный прогон сам по себе не отвечает на
+// вопрос "а какой bash это исполнял" — а для macOS ответ и есть весь смысл
+// упражнения: система там несёт /bin/bash 3.2, тогда как в PATH раннера
+// GitHub первым стоит Homebrew-bash 5.x, и все .sh-тесты молча ушли бы в
+// него. Тест печатает имя бинарника и его версию в вывод прогона и падает,
+// если OAB_BASH указывает в никуда, — тихого отката на PATH-bash нет.
+test(`bash-раннер тестов: ${BASH}`, (t) => {
+  const version = execFileSync(BASH, ['--version'], { encoding: 'utf8' }).split('\n')[0].trim();
+  t.diagnostic(`bash-раннер: ${BASH} — ${version}`);
+  assert.match(version, /bash, version/, `${BASH} не похож на bash: ${version}`);
+});
+
 test('bash-установщик разбирает манифест так же, как JSON.parse', () => {
-  const out = execFileSync('bash', [join(REPO, 'scripts', 'install-obsidian-plugins.sh'), '--dry-run'],
+  const out = execFileSync(BASH, [join(REPO, 'scripts', 'install-obsidian-plugins.sh'), '--dry-run'],
     { encoding: 'utf8' });
   assert.equal(out, dryRunLines());
 });
 
 // "0.9.0" < "0.10.0" — строковое сравнение этого не даёт, поэтому обе
 // клиентские реализации сравнивают версии покомпонентно и численно.
-const bashCompare = (a, b) => execFileSync('bash', ['-c',
+const bashCompare = (a, b) => execFileSync(BASH, ['-c',
   `source "${join(REPO, 'scripts', 'install-obsidian-plugins.sh')}"; compare_versions "${a}" "${b}"`],
   { encoding: 'utf8' }).trim();
 
@@ -234,7 +263,7 @@ for (const ps of psRunners) {
 // PowerShell-интерпретатор (см. psRunners выше) — на windows-latest в CI это
 // и pwsh, и Windows PowerShell 5.1 одновременно.
 const RUNNERS = [
-  { name: 'bash', script: 'install-obsidian-plugins.sh', cmd: 'bash', args: [], dryRun: '--dry-run' },
+  { name: 'bash', script: 'install-obsidian-plugins.sh', cmd: BASH, args: [], dryRun: '--dry-run' },
   ...psRunners.map((ps) => ({
     name: `PowerShell (${ps.label})`,
     script: 'install-obsidian-plugins.ps1',
@@ -266,6 +295,15 @@ const manifestTextNoTrailingNewline = (plugins) =>
   '{\n  "plugins": [\n' +
   plugins.map((p) => '    ' + JSON.stringify(p)).join(',\n') +
   ']}';
+
+// Манифест, который существует и непуст, но не даёт ни одной записи плагина.
+// Пустой массив plugins — самая честная форма этого состояния, воспроизводимая
+// обеими реализациями одинаково: у bash на такой строке нет ключа "id", у
+// PowerShell ConvertFrom-Json отдаёт пустую коллекцию. На живой macOS то же
+// состояние возникает иначе — BSD sed/grep -o могут разобрать строки не так,
+// как GNU, и все id придут пустыми, — но наблюдаемый результат тот же: ноль
+// записей там, где манифест на месте.
+const manifestTextNoPlugins = () => '{\n  "plugins": [\n  ]\n}\n';
 
 const DEFAULT_PLUGINS = [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '1.0.0', enabled: true }];
 
@@ -306,6 +344,42 @@ async function inSandbox(runner, stubOpts, body, plugins = DEFAULT_PLUGINS, buil
 // что у dryRunLines выше, но не по настоящему манифесту.
 const expectedDryRun = (plugins) => plugins.map((p) =>
   [p.id, p.repo, p.minVersion, p.vendored ? 'vendored' : 'remote'].join('\t')).join('\n') + '\n';
+
+// Тексты сообщений — часть контракта паритета, а не деталь реализации: обе
+// реализации обязаны печатать их ДОСЛОВНО и одинаково. Раньше проверялся
+// только префикс ("FAIL ...: GitHub ответил 404", "WARN ...: установлена
+// версия X, но манифест требует Y"), а весь хвост с объяснением, что делать,
+// — то есть единственное, ради чего эти сообщения существуют, — не
+// проверялся ни одним раннером. Опечатка, внесённая в .ps1 и не внесённая в
+// .sh, оставляла все тесты зелёными и разводила инструкции для пользователей
+// macOS и Windows. Константы общие для обоих раннеров именно поэтому: править
+// их придётся один раз, и тогда расхождение реализаций сразу станет красным.
+// Сверяем через includes, а не equal: на Windows строка приходит с хвостовым
+// \r, и это ожидаемо (см. паритетные ограничения), а в stderr рядом могут
+// стоять другие строки.
+const EXPECTED_TEXT = {
+  // Полный текст FAIL по 404 от API GitHub (describe_http_failure / Get-HttpFailureText).
+  fail404: 'FAIL bad-plugin: GitHub ответил 404 — репозиторий мог быть переименован или удалён.'
+    + ' Проверь и обнови obsidian-plugins.json.',
+  // Полный текст WARN о недостижимом minVersion (стенд отдаёт ассет 0.5.68 при minVersion 0.5.70).
+  warnUnreachableMinVersion: 'WARN stub-plugin: установлена версия 0.5.68, но манифест требует 0.5.70'
+    + ' — такая версия недостижима из релизных ассетов owner/stub (тег релиза и manifest.json внутри'
+    + " него расходятся version'ом). Поправь minVersion в obsidian-plugins.json на версию, которую"
+    + ' реально отдают ассеты.',
+  // Отказ на манифесте, из которого не разобралось ни одной записи. Путь к
+  // манифесту в середине сообщения проверить дословно нельзя: bash под Git
+  // Bash печатает /d/projects/..., а PowerShell — D:\projects\..., поэтому
+  // текст сверяется двумя половинами вокруг пути.
+  failNoPluginsHead: 'FAIL: манифест ',
+  failNoPluginsTail: ' не дал ни одной записи плагина — проверь, что массив plugins не пуст'
+    + ' и каждый объект плагина занимает ровно одну строку.',
+};
+
+// Дословная сверка сообщения: assert.match по префиксу пропускала бы правку
+// хвоста в одной реализации из двух.
+const assertContains = (actual, expected, what) =>
+  assert.ok(String(actual).includes(expected),
+    `${what}: текст обязан совпадать с эталоном дословно.\nожидали подстроку: ${JSON.stringify(expected)}\nполучено: ${JSON.stringify(actual)}`);
 
 // Регресс на bash 3.2 (macOS) напрямую здесь не поймать: машина, где гоняются
 // тесты, использует современный bash, а голый "$@" под nounset при пустом
@@ -391,8 +465,7 @@ for (const runner of RUNNERS) {
       // Write-Error оставил бы все проверки выше зелёными, а в консоли выдал
       // бы шестистрочный блок с CategoryInfo/FullyQualifiedErrorId вокруг
       // того же текста (ErrorView в 5.1 по умолчанию NormalView).
-      assert.match(err.stderr, /FAIL bad-plugin: GitHub ответил 404/,
-        `в stderr нет строки про 404 по bad-plugin: ${JSON.stringify(err.stderr)}`);
+      assertContains(err.stderr, EXPECTED_TEXT.fail404, 'FAIL по 404 для bad-plugin');
       assert.doesNotMatch(err.stderr, /CategoryInfo/,
         'stderr содержит CategoryInfo — сообщение печатается через Write-Error вместо ' +
         '[Console]::Error.WriteLine, пользователь получит многострочный блок вместо одной строки: ' +
@@ -461,6 +534,37 @@ for (const runner of RUNNERS) {
     });
   }
 
+  // Манифест на месте и непуст, но разбор не дал ни одной записи — отказ, а не
+  // тихий успех. До этой проверки bash читал одну пустую строку, спотыкался о
+  // "[ -z "$id" ] && continue" и выходил с кодом 0, не напечатав вообще ничего:
+  // пользователь на macOS разумно решил бы, что всё поставилось. Именно так
+  // выглядит расхождение реализаций, если BSD sed/grep -o разберут строки не
+  // как GNU: на Windows тот же манифест ставится целиком через
+  // ConvertFrom-Json. Проверяем оба режима: dry-run — единственный, которым
+  // человек может убедиться, что установщик вообще видит его манифест, и
+  // тихий пустой вывод там так же вреден.
+  for (const mode of ['установка', '--dry-run']) {
+    test(`${runner.name}: манифест без единой записи плагина — явная ошибка (${mode})`, { skip }, async () => {
+      await inSandbox(runner, {}, ({ sandbox, run }) => {
+        let err;
+        try { run(mode === '--dry-run' ? [runner.dryRun] : []); } catch (e) { err = e; }
+        assert.ok(err, 'манифест без плагинов обязан быть отказом с ненулевым кодом, а не тихим успехом');
+        assert.equal(err.status, 1, `код возврата должен быть ровно 1, получено ${err.status}: ${JSON.stringify(err.stderr)}`);
+        assert.equal(err.stdout, '', `в stdout не должно быть ничего: ${JSON.stringify(err.stdout)}`);
+        assertContains(err.stderr, EXPECTED_TEXT.failNoPluginsHead, 'отказ на манифесте без плагинов (начало)');
+        assertContains(err.stderr, EXPECTED_TEXT.failNoPluginsTail, 'отказ на манифесте без плагинов (хвост)');
+        // Отличается от уже существующего случая "манифеста нет вовсе": это
+        // разные поломки и чинятся они по-разному, поэтому и текст разный.
+        assert.doesNotMatch(err.stderr, /не найден манифест/,
+          `манифест есть — сообщение не должно быть про его отсутствие: ${JSON.stringify(err.stderr)}`);
+        assert.doesNotMatch(err.stderr, /CategoryInfo/,
+          'stderr содержит CategoryInfo — вместо внятной строки пользователь получит исключение PowerShell');
+        assert.equal(existsSync(join(sandbox, '.obsidian')), false,
+          'при отказе на разборе манифеста скрипт не должен трогать диск');
+      }, DEFAULT_PLUGINS, manifestTextNoPlugins);
+    });
+  }
+
   // Регресс на реальный случай: tag_name latest-релиза dataview был 0.5.70,
   // а manifest.json ВНУТРИ этого же релиза нёс version 0.5.68 — тег и ассет
   // разошлись. Пока minVersion манифеста совпадает с тем, что реально даёт
@@ -484,8 +588,8 @@ for (const runner of RUNNERS) {
       assert.match(r.stdout, /installed stub-plugin/,
         `в stdout нет строки об установке: ${JSON.stringify(r.stdout)}`);
 
-      assert.match(r.stderr, /WARN stub-plugin: установлена версия 0\.5\.68, но манифест требует 0\.5\.70/,
-        `в stderr нет предупреждения о недостижимом minVersion: ${JSON.stringify(r.stderr)}`);
+      assertContains(r.stderr, EXPECTED_TEXT.warnUnreachableMinVersion,
+        'WARN о недостижимом minVersion');
       assert.doesNotMatch(r.stderr, /CategoryInfo/,
         'stderr содержит CategoryInfo — предупреждение печатается не той функцией, что даёт паритет с bash');
     }, [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '0.5.70', enabled: true }]);
@@ -509,6 +613,20 @@ for (const runner of RUNNERS) {
     }, [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '0.5.70', enabled: true }]);
   });
 
+  // Регресс, реально найденный на живой Windows PowerShell 5.1: без
+  // [CmdletBinding()] непривязанный аргумент ("--dry-run" в unix-стиле по
+  // привычке, любая опечатка) молча оседает в $args, ошибки биндинга не
+  // происходит — скрипт спокойно шёл в настоящую установку вместо отказа.
+  // bash-версия эту дыру уже закрывала (см. "пропавший манифест" выше);
+  // здесь — паритет обеих реализаций. Стенд отдаёт настоящие ассеты, поэтому
+  // если проверка аргументов отсутствует или сломана, каталог плагина
+  // реально появится на диске, а не просто выживет какая-то ошибка позже.
+  // НЕ упрощай стенд до assets: {} (как у соседних тестов выше): с пустыми
+  // ассетами скрипт без проверки аргументов ушёл бы в установку, получил 404
+  // на manifest.json, убрал за собой созданный каталог и вышел с кодом 1 —
+  // и проверки "ошибка была" и "каталога нет" остались бы зелёными ПРИ
+  // работающем баге. Код возврата и текст stderr ниже проверяются ровно
+  // затем же: любой ненулевой код "по любой причине" тут не годится.
   test(`${runner.name}: неизвестный аргумент — явная ошибка, установка не идёт`, { skip }, async () => {
     await inSandbox(runner, {
       tag: '9.9.9',
@@ -517,6 +635,10 @@ for (const runner of RUNNERS) {
       let err;
       try { run(['--nonsense']); } catch (e) { err = e; }
       assert.ok(err, 'на неизвестном аргументе скрипт обязан выйти с ненулевым кодом, а не пойти в установку');
+      assert.equal(err.status, 2,
+        `код возврата на неизвестном аргументе обязан быть ровно 2 (разбор аргументов), получено ${err.status}: ${JSON.stringify(err.stderr)}`);
+      assert.match(err.stderr, /Неизвестные аргументы/,
+        `в stderr нет строки про неизвестные аргументы — скрипт упал по другой причине: ${JSON.stringify(err.stderr)}`);
       assert.equal(existsSync(join(sandbox, '.obsidian', 'plugins', 'stub-plugin')), false,
         'на неизвестном аргументе скрипт не должен трогать диск — каталог плагина не должен появляться');
     });

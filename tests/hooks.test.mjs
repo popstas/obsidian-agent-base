@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../scripts/lib/repo.mjs';
+import { BASH } from './helpers/bash.mjs';
 
 test('tasks-startup печатает вложенный путь лога', () => {
   const out = execFileSync(process.execPath, [join(REPO, '.claude', 'hooks', 'tasks-startup.mjs')], { encoding: 'utf8' });
@@ -49,7 +50,7 @@ const expectedLogPath = () => {
 };
 
 test('codex-хук на bash печатает тот же путь лога, что и Claude-версия', () => {
-  const out = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
+  const out = execFileSync(BASH, [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
   const ctx = JSON.parse(out).hookSpecificOutput.additionalContext;
   assert.ok(ctx.includes(expectedLogPath()), `в подсказке нет ${expectedLogPath()}: ${ctx}`);
 });
@@ -59,7 +60,7 @@ test('codex-хук на bash печатает тот же путь лога, ч�
 // то же. Правку текста в одной из них без правки остальных ничто иначе не
 // ловит — .ps1 сверяется с .sh ниже, а .mjs не сверялся ни с чем.
 test('codex-хук на bash и Claude-хук на Node печатают один и тот же объект', () => {
-  const sh = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
+  const sh = execFileSync(BASH, [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
   const mjs = execFileSync(process.execPath, [join(REPO, '.claude', 'hooks', 'tasks-startup.mjs')], { encoding: 'utf8' });
   assert.deepStrictEqual(JSON.parse(sh).hookSpecificOutput, JSON.parse(mjs).hookSpecificOutput);
 });
@@ -106,7 +107,7 @@ function assertUtf8Output(raw, label) {
 // Проверка кодировки дешёвая и симметричная — гоняем и для bash, не только
 // для PowerShell: если байтов "Посмотри" нет и там, дело не в Windows.
 test('codex-хук на bash пишет UTF-8, а не что-то ещё', () => {
-  const raw = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')]);
+  const raw = execFileSync(BASH, [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')]);
   assertUtf8Output(raw, 'bash');
 });
 
@@ -117,7 +118,7 @@ for (const ps of psRunners) {
   // строк: ConvertTo-Json на PS 5.1 форматирует иначе, чем bash-heredoc,
   // при идентичном содержимом.
   test(`codex-хук на PowerShell (${ps.label}) печатает тот же объект, что и bash-версия`, { skip }, () => {
-    const sh = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
+    const sh = execFileSync(BASH, [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
     const out = execFileSync(ps.cmd, ['-NoProfile', '-File',
       join(REPO, '.codex', 'hooks', 'tasks-startup.ps1')], { encoding: 'utf8' });
     assert.deepStrictEqual(
