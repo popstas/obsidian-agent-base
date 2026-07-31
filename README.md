@@ -15,6 +15,7 @@ skills/                  agent skills, one SKILL.md per skill (browsable in Obsi
 .codex-plugin/           Codex plugin manifest
 .cursor-plugin/          Cursor plugin manifest
 .claude/                 settings, hooks, task counter, base sync
+.codex/                  Codex hooks (session-start reminder), bash + PowerShell
 .obsidian/               Obsidian settings, snippets, vendored tasks-mover
 scripts/                 skills list, demo manifest, plugin installer, release
 tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.md
@@ -38,16 +39,24 @@ On Windows, run this instead:
 ```powershell
 git clone https://github.com/popstas/obsidian-agent-base my-vault
 cd my-vault
-powershell -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
 ```
 
-No Node, Python, or `jq` required to install or update plugins — neither on
-macOS/Linux nor on Windows. The only thing on the client that still runs on
-Node is the Claude Code hooks (session-start reminder, task counter): Claude
-Code has no per-OS command field, so one command string can't cover both
-platforms. Without Node they just silently no-op — the agent gives the
-session-start reminder itself, and `weekly-report`'s task counter falls back
-to counting `tasks.md` directly.
+(`-NoProfile` keeps a chatty PowerShell profile from mixing its own output — or
+its own `OutputEncoding` — into the installer's.)
+
+**Installing and updating plugins needs no Node, Python, or `jq`** — neither on
+macOS/Linux nor on Windows. Two things on the client do still run on Node, and
+neither is part of the daily loop:
+
+- **Claude Code hooks** (session-start reminder, task counter). Claude Code has
+  no per-OS command field, so one command string can't cover both platforms —
+  Codex has one, which is why its hooks need no Node. Without Node the hooks
+  just silently no-op: the agent gives the session-start reminder itself, and
+  `weekly-report`'s task counter falls back to counting `tasks.md` directly.
+- **`base-sync`** (`node .claude/sync-base.cjs`, see below) — the optional
+  workflow for pulling upstream skill updates into a customized vault. Kept on
+  Node deliberately; you only reach for it when base has moved on.
 Prefer clicking? Obsidian can install every plugin from
 `obsidian-plugins.json` through Settings → Community plugins → Browse.
 

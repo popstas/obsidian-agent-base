@@ -15,6 +15,7 @@ skills/                  скиллы агента, по одному SKILL.md �
 .codex-plugin/           манифест плагина для Codex
 .cursor-plugin/          манифест плагина для Cursor
 .claude/                 настройки, хуки, счётчик задач, синхронизация с base
+.codex/                  хуки Codex (подсказка на старте сессии), bash + PowerShell
 .obsidian/               настройки Obsidian, сниппеты, вендоренный tasks-mover
 scripts/                 список скиллов, демо-манифест, установщик плагинов, релиз
 tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.md
@@ -38,16 +39,24 @@ bash scripts/install-obsidian-plugins.sh     # macOS / Linux
 ```powershell
 git clone https://github.com/popstas/obsidian-agent-base my-vault
 cd my-vault
-powershell -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
 ```
 
-Ни Node, ни Python, ни `jq` не нужны для установки и обновления плагинов —
-ни на macOS/Linux, ни на Windows. Единственное, что на клиенте всё ещё
-держится на Node, — хуки Claude Code (подсказка на старте сессии, счётчик
-задач): у Claude Code нет поля для выбора команды по ОС, поэтому одной
-строкой две платформы не покрыть. Без Node они просто тихо не срабатывают —
-подсказку на старте даёт сам агент, а счётчик задач у `weekly-report` имеет
-фолбэк на прямой подсчёт по `tasks.md`.
+(`-NoProfile` — чтобы разговорчивый профиль PowerShell не подмешал в вывод
+установщика своё, в том числе свою `OutputEncoding`.)
+
+**Для установки и обновления плагинов не нужны ни Node, ни Python, ни `jq`** —
+ни на macOS/Linux, ни на Windows. На Node на клиенте остаются две вещи, и ни
+одна не входит в повседневный цикл:
+
+- **Хуки Claude Code** (подсказка на старте сессии, счётчик задач). У Claude
+  Code нет поля для выбора команды по ОС, поэтому одной строкой две платформы
+  не покрыть — у Codex такое поле есть, и его хуки поэтому обходятся без Node.
+  Без Node хуки просто тихо не срабатывают: подсказку на старте даёт сам агент,
+  а счётчик задач у `weekly-report` имеет фолбэк на прямой подсчёт по `tasks.md`.
+- **`base-sync`** (`node .claude/sync-base.cjs`, см. ниже) — необязательный
+  сценарий подтягивания обновлений скиллов в уже адаптированный vault. Оставлен
+  на Node осознанно: к нему обращаются, только когда base ушёл вперёд.
 Не хочешь терминал — Obsidian поставит все плагины из `obsidian-plugins.json`
 сам: Settings → Community plugins → Browse.
 
