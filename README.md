@@ -118,6 +118,12 @@ skills to yourself; to pull updates without clobbering local customizations:
    via aliases (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), and
    marks already-diverged skills `customized: true`. The path to the base checkout is
    read from `baseSync.base.path` (default `../../obsidian-agent-base`).
+
+   The base checkout must already exist at that path **before** you run this:
+   `bootstrap` doesn't clone it for you and fails with "Base not found" if it's
+   missing. Also mind the checkout's branch — bootstrap only sees skills that exist
+   in base at its current commit; any other local skills get a separate warning line,
+   but they won't be tracked in the lock.
 2. Then on demand: `node .claude/sync-base.cjs status` — a table of states (UNCHANGED /
    BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE), `diff <skill>` — the
    differences, `stamp <skill>` — record the sync after a manual merge.

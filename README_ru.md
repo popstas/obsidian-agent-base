@@ -119,6 +119,11 @@ Marketplace ставит только скиллы — счётчик задач
    с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`)
    и пометит уже разошедшиеся скиллы `customized: true`. Путь к чекауту base берётся из
    `baseSync.base.path` (по умолчанию `../../obsidian-agent-base`).
+
+   Клон base должен физически лежать по этому пути **до** запуска: `bootstrap` не
+   скачивает его сам и падает с «Не найден base». Следи и за веткой клона — bootstrap
+   видит только те скиллы, что есть в base на его текущем коммите; про остальные
+   локальные скиллы он предупредит отдельной строкой, но в lock они не попадут.
 2. Дальше по запросу: `node .claude/sync-base.cjs status` — таблица состояний
    (UNCHANGED / BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE),
    `diff <skill>` — различия, `stamp <skill>` — зафиксировать синхронизацию после
