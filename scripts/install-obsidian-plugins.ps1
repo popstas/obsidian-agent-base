@@ -1,4 +1,4 @@
-# Ставит чужие Obsidian-плагины из obsidian-plugins.json.
+﻿# Ставит чужие Obsidian-плагины из obsidian-plugins.json.
 # Чужой код в репозиторий не коммитится, поэтому это шаг развёртывания.
 #
 # Совместим с Windows PowerShell 5.1 — тем, что стоит на чистой Windows.
