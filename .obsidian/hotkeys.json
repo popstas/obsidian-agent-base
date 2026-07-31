@@ -70,6 +70,12 @@
         "Shift"
       ],
       "key": "L"
+    },
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "B"
     }
   ],
   "claude-sidebar:open-claude": [
@@ -130,7 +136,7 @@
       "modifiers": [
         "Alt"
       ],
-      "key": "-"
+      "key": "="
     }
   ],
   "editor:fold-more": [
@@ -138,7 +144,37 @@
       "modifiers": [
         "Alt"
       ],
-      "key": "="
+      "key": "-"
+    }
+  ],
+  "obsidian-editor-shortcuts:duplicateLine": [
+    {
+      "modifiers": [
+        "Alt",
+        "Mod",
+        "Shift"
+      ],
+      "key": "D"
+    }
+  ],
+  "obsidian-editor-shortcuts:selectAllOccurrences": [],
+  "obsidian-editor-shortcuts:selectLine": [],
+  "editor:delete-paragraph": [],
+  "obsidian-editor-shortcuts:selectWordOrNextOccurrence": [
+    {
+      "modifiers": [
+        "Mod"
+      ],
+      "key": "D"
+    }
+  ],
+  "editor:open-link-in-new-leaf": [],
+  "obsidian-editor-shortcuts:insertLineBelow": [
+    {
+      "modifiers": [
+        "Mod"
+      ],
+      "key": "Enter"
     }
   ]
 }
