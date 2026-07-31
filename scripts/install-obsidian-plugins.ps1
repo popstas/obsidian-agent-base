@@ -9,6 +9,15 @@ param([switch]$DryRun)
 # отказывает. Обязано стоять до первого сетевого вызова.
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Без этой строки Windows PowerShell 5.1 пишет вывод (skip/installed/FAIL) в
+# консольную OEM-кодировку (CP866 для русской локали), а не в UTF-8 — все
+# русские сообщения превращаются в мусор без chcp 65001, чего обычный
+# пользователь не делает. $false обязателен — UTF8 БЕЗ BOM в потоке, иначе
+# ломается всё, что этот вывод парсит; BOM самого файла — отдельная вещь.
+# Подтверждено на живой Windows PowerShell 5.1. Обязана стоять до первого
+# вывода (Write-Host / [Console]::Error.WriteLine).
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $Api = if ($env:OAB_GITHUB_API) { $env:OAB_GITHUB_API } else { 'https://api.github.com' }

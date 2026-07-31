@@ -149,6 +149,28 @@ test('каждый .ps1 в репозитории начинается с UTF-8 
   }
 });
 
+// Подтверждено на живой Windows PowerShell 5.1: без переустановки
+// [Console]::OutputEncoding вывод (stdout и stderr) идёт в консольную OEM-
+// кодировку (CP866 для русской локали), а не в UTF-8 — приёмная сторона
+// получает синтаксически валидный JSON/текст с побитой кириллицой внутри,
+// не падение, а тихая порча. BOM файла (тест выше) и кодировка потока вывода
+// — разные вещи, обе обязательны. New-Object ... $false — принципиально:
+// $false значит UTF8 БЕЗ BOM в потоке; С BOM в потоке ломается JSON.parse на
+// приёмной стороне. НЕ убирай эту строку как "дублирует BOM файла".
+test('каждый .ps1 в репозитории переустанавливает OutputEncoding в UTF-8 без BOM', () => {
+  const files = findPs1Files(REPO);
+  assert.ok(files.length > 0, 'не нашлось ни одного .ps1 — проверь findPs1Files, тест не должен молча проходить пустым');
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8');
+    assert.match(text, /\[Console\]::OutputEncoding\s*=\s*New-Object\s+System\.Text\.UTF8Encoding\s+\$false/,
+      `${file}: нет переустановки [Console]::OutputEncoding в UTF8 без BOM. Без неё Windows PowerShell 5.1 пишет ` +
+      `stdout/stderr в консольную OEM-кодировку (CP866 для русской локали) — русский текст в выводе превращается ` +
+      `в мусор без ручного chcp 65001, которого обычный пользователь не делает (подтверждено на живой Windows ` +
+      `PowerShell 5.1). Добавь "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding \\$false" до первого ` +
+      `вывода в скрипте — не снимай эту строку как "лишнюю", она не то же самое, что BOM файла.`);
+  }
+});
+
 const dryRunLines = () => manifest.plugins.map((p) =>
   [p.id, p.repo, p.minVersion, p.vendored ? 'vendored' : 'remote'].join('\t')).join('\n') + '\n';
 
