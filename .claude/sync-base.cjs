@@ -307,9 +307,10 @@ function cmdBootstrap() {
   const untracked = untrackedLocalSkills(lock, skills);
   if (untracked.length) {
     console.log("");
-    console.log(`⚠ Локальных скиллов вне base ${commit || "(нет git)"}: ${untracked.length} — не отслеживаются:`);
+    console.log(`ℹ Локальных скиллов вне base ${commit || "(нет git)"}: ${untracked.length} — baseSync их не отслеживает:`);
     console.log(`  ${untracked.join(", ")}`);
-    console.log("  Проверь, на той ли ветке клон base.");
+    console.log("  Для доменных скиллов наследника это норма — base-sync их и не должен трогать (см. base-sync/SKILL.md, «Защита от ошибок»).");
+    console.log("  Стоит свериться с веткой клона base, только если среди перечисленных есть скилл, похожий на форк одного из базовых.");
   }
   console.log(`\nЗаписан ${LOCK}`);
 }
