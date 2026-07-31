@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join, relative } from 'node:path';
+import { join, relative, basename } from 'node:path';
 import { REPO, walk, rootDocs } from '../scripts/lib/repo.mjs';
 
 // Плоский дневной лог: сразу после Log/ идёт дата, даже если Log/ и дата
@@ -94,4 +94,18 @@ test('в репозитории нет симлинков', () => {
     .filter((line) => line.startsWith('120000'))
     .map((line) => line.split('\t')[1]);
   assert.deepEqual(links, []);
+});
+
+// index.md заявлен в obsidian-vault и INTEGRATION.md как штатная точка входа.
+// Битая ссылка в нём — первое, что увидит новый пользователь vault.
+test('index.md существует, и его wikilinks резолвятся', () => {
+  const path = join(REPO, 'index.md');
+  assert.ok(existsSync(path), 'нет корневого index.md');
+  const text = readFileSync(path, 'utf8');
+  const names = [...text.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim());
+  assert.ok(names.length > 0, 'в index.md нет wikilinks — это не точка входа');
+  const known = new Set(
+    walk(REPO).filter((p) => p.endsWith('.md')).map((p) => basename(p, '.md'))
+  );
+  assert.deepEqual(names.filter((n) => !known.has(n)), [], 'битые wikilinks в index.md');
 });
