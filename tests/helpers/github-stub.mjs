@@ -23,6 +23,8 @@ const SERVER_SCRIPT = join(__dirname, 'github-stub-server.mjs');
 // opts.tag — что вернуть в tag_name; opts.assets — { 'main.js': 'содержимое' }.
 // Файл, которого нет в assets, отдаётся как 404 — так проверяется опциональность
 // styles.css. opts.apiStatus — подменить код ответа API (403/404).
+// opts.repos — переопределения per-repo: { 'owner/name': { apiStatus, tag, assets } },
+// для манифестов с несколькими плагинами и разным исходом на каждый.
 export function startGithubStub(opts) {
   const child = fork(SERVER_SCRIPT, [], {
     env: { ...process.env, OAB_STUB_OPTS: JSON.stringify(opts ?? {}) },

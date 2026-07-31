@@ -145,17 +145,25 @@ const RUNNERS = [
   { name: 'PowerShell', script: 'install-obsidian-plugins.ps1', cmd: 'pwsh', args: ['-NoProfile', '-File'], requiresPwsh: true },
 ];
 
-// Готовит песочницу с манифестом на один плагин и копией скрипта, запускает
-// установщик против подменённого GitHub и отдаёт телу теста путь и запускалку.
-async function inSandbox(runner, stubOpts, body) {
+// Один плагин на строку — построчный парсер bash находит на ней "id" и
+// разбирает как один плагин; с несколькими плагинами на одной строке JSON
+// он бы слился в одну (жадную) запись. Формат — как в настоящем
+// obsidian-plugins.json (см. тест "каждый плагин в манифесте занимает одну строку").
+const manifestText = (plugins) =>
+  '{\n  "plugins": [\n' +
+  plugins.map((p, i) => '    ' + JSON.stringify(p) + (i < plugins.length - 1 ? ',' : '')).join('\n') +
+  '\n  ]\n}\n';
+
+const DEFAULT_PLUGINS = [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '1.0.0', enabled: true }];
+
+// Готовит песочницу с манифестом (по умолчанию — на один плагин) и копией
+// скрипта, запускает установщик против подменённого GitHub и отдаёт телу
+// теста путь и запускалку.
+async function inSandbox(runner, stubOpts, body, plugins = DEFAULT_PLUGINS) {
   const stub = await startGithubStub(stubOpts);
   const sandbox = mkdtempSync(join(tmpdir(), 'oab-'));
   try {
-    // JSON.stringify кладёт всё в одну строку — построчный парсер bash находит
-    // на ней "id" и разбирает как один плагин, что и требуется.
-    writeFileSync(join(sandbox, 'obsidian-plugins.json'), JSON.stringify({
-      plugins: [{ id: 'stub-plugin', repo: 'owner/stub', minVersion: '1.0.0', enabled: true }],
-    }));
+    writeFileSync(join(sandbox, 'obsidian-plugins.json'), manifestText(plugins));
     mkdirSync(join(sandbox, 'scripts'), { recursive: true });
     const script = join(sandbox, 'scripts', runner.script);
     copyFileSync(join(REPO, 'scripts', runner.script), script);
@@ -195,5 +203,35 @@ for (const runner of RUNNERS) {
       assert.throws(run, 'скрипт обязан выйти с ненулевым кодом');
       assert.equal(existsSync(join(sandbox, '.obsidian', 'plugins', 'stub-plugin')), false);
     });
+  });
+
+  // Регрессия на баг, который уже реально стрелял: один плагин ставится
+  // успешно (печатает info-строку в stdout), другой падает на 404 API —
+  // частичный провал обязан отдавать НЕНУЛЕВОЙ код возврата, а не молча
+  // схлопываться в 0 из-за того, что info-сообщения об успехе смешиваются
+  // с итоговым кодом выхода. Проверяем конкретный код (1 = один провал), а
+  // не просто "бросило исключение": exit 0 не бросает исключение вообще, и
+  // assert.throws такую регрессию бы не поймал.
+  test(`${runner.name}: смешанный исход — один плагин ставится, другой падает на 404, код возврата ненулевой`, { skip }, async () => {
+    const plugins = [
+      { id: 'good-plugin', repo: 'owner/good', minVersion: '1.0.0', enabled: true },
+      { id: 'bad-plugin', repo: 'owner/bad', minVersion: '1.0.0', enabled: true },
+    ];
+    await inSandbox(runner, {
+      tag: '9.9.9',
+      assets: { 'manifest.json': '{"version":"9.9.9"}', 'main.js': 'console.log(1)' },
+      repos: { 'owner/bad': { apiStatus: 404 } },
+    }, ({ sandbox, run }) => {
+      let err;
+      try { run(); } catch (e) { err = e; }
+      assert.ok(err, 'скрипт обязан выйти с ненулевым кодом при частичном провале');
+      assert.equal(err.status, 1, `код возврата должен быть ровно 1 (один провал), получено ${err.status}`);
+
+      const goodDir = join(sandbox, '.obsidian', 'plugins', 'good-plugin');
+      assert.equal(readFileSync(join(goodDir, 'main.js'), 'utf8'), 'console.log(1)',
+        'успешный плагин обязан установиться, несмотря на провал соседнего');
+      assert.equal(existsSync(join(sandbox, '.obsidian', 'plugins', 'bad-plugin')), false,
+        'за упавшим плагином должно быть убрано');
+    }, plugins);
   });
 }

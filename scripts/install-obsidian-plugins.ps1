@@ -88,12 +88,17 @@ function Invoke-Install {
     } catch {
       $code = 0
       if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
-      Write-Error -Message (Get-HttpFailureText $p.id $code) -ErrorAction Continue
+      # [Console]::Error.WriteLine, а не Write-Error: в Windows PowerShell 5.1
+      # ErrorView по умолчанию — NormalView, и Write-Error печатает не чистую
+      # строку, а многострочный блок с CategoryInfo/FullyQualifiedErrorId и
+      # ANSI-цветом. bash-версия пишет в stderr ровно одну чистую строку
+      # (echo "FAIL ..." >&2) — паритет текстов держит именно прямая запись.
+      [Console]::Error.WriteLine((Get-HttpFailureText $p.id $code))
       $failed++
       continue
     }
     if (-not $tag) {
-      Write-Error -Message "FAIL $($p.id): в ответе GitHub нет tag_name" -ErrorAction Continue
+      [Console]::Error.WriteLine("FAIL $($p.id): в ответе GitHub нет tag_name")
       $failed++
       continue
     }
@@ -115,7 +120,7 @@ function Invoke-Install {
         if ($name -eq 'styles.css') { continue }
         $code = 0
         if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
-        Write-Error -Message "FAIL $($p.id): не удалось скачать ${name}: HTTP $code" -ErrorAction Continue
+        [Console]::Error.WriteLine("FAIL $($p.id): не удалось скачать ${name}: HTTP $code")
         $ok = $false
         break
       }
@@ -134,7 +139,10 @@ function Invoke-Install {
   }
 
   if ($failed -gt 0) {
-    Write-Error -Message "`n$failed плагин(ов) не установлено. Поставь их вручную через Obsidian → Community plugins." -ErrorAction Continue
+    # Две отдельные строки в stderr, как в bash (echo "" >&2; echo "$failed ..." >&2) —
+    # не одна строка с "`n" внутри Write-Error.
+    [Console]::Error.WriteLine('')
+    [Console]::Error.WriteLine("$failed плагин(ов) не установлено. Поставь их вручную через Obsidian → Community plugins.")
     return 1
   }
   return 0
