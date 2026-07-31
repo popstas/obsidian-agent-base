@@ -97,7 +97,9 @@ test('в репозитории нет симлинков', () => {
 });
 
 // index.md заявлен в obsidian-vault и INTEGRATION.md как штатная точка входа.
-// Битая ссылка в нём — первое, что увидит новый пользователь vault.
+// Битая ссылка в нём — первое, что увидит новый пользователь vault. Считаем
+// по индексу git, а не по рабочему дереву: gitignored мусор рядом с
+// репозиторием (например .superpowers/) не должен делать битую ссылку зелёной.
 test('index.md существует, и его wikilinks резолвятся', () => {
   const path = join(REPO, 'index.md');
   assert.ok(existsSync(path), 'нет корневого index.md');
@@ -105,7 +107,9 @@ test('index.md существует, и его wikilinks резолвятся', 
   const names = [...text.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim());
   assert.ok(names.length > 0, 'в index.md нет wikilinks — это не точка входа');
   const known = new Set(
-    walk(REPO).filter((p) => p.endsWith('.md')).map((p) => basename(p, '.md'))
+    execFileSync('git', ['ls-files', '-z', '*.md'], { cwd: REPO, encoding: 'utf8' })
+      .split('\0').filter(Boolean)
+      .map((p) => basename(p, '.md'))
   );
   assert.deepEqual(names.filter((n) => !known.has(n)), [], 'битые wikilinks в index.md');
 });
