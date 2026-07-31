@@ -30,8 +30,21 @@ demo-manifest.json       что удаляет demo-content-delete: демо-ф�
 ```bash
 git clone https://github.com/popstas/obsidian-agent-base my-vault
 cd my-vault
-node scripts/install-obsidian-plugins.mjs
+bash scripts/install-obsidian-plugins.sh     # macOS / Linux
 ```
+
+На Windows вместо этого:
+
+```powershell
+git clone https://github.com/popstas/obsidian-agent-base my-vault
+cd my-vault
+powershell -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
+```
+
+Ни Node, ни Python, ни `jq` не нужны — vault работает на том, что уже есть
+в стандартной macOS или Windows. Node нужен только для разработки самой базы.
+Не хочешь терминал — Obsidian поставит все плагины из `obsidian-plugins.json`
+сам: Settings → Community plugins → Browse.
 
 Открой папку как vault в Obsidian, запусти в ней сессию агента и скажи «адаптируй
 этот vault под меня». Агент следует `INTEGRATION.md`, интервьюирует тебя и в конце

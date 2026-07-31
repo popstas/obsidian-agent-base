@@ -17,7 +17,7 @@
     "test": "node --test",
     "gen:skills-list": "node scripts/gen-skills-list.mjs",
     "gen:demo-manifest": "node scripts/gen-demo-manifest.mjs",
-    "install:obsidian-plugins": "node scripts/install-obsidian-plugins.mjs",
+    "install:obsidian-plugins": "bash scripts/install-obsidian-plugins.sh",
     "changelog": "node scripts/changelog.mjs",
     "release": "node scripts/release.mjs"
   },

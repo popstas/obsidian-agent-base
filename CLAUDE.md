@@ -4,7 +4,7 @@
 
 ## Что это
 
-Личный vault на базе [obsidian-agent-base](https://github.com/popstas/obsidian-agent-base): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Единственная реальная зависимость — Node: на нём держится автоматизация vault (счётчик задач, хуки, см. «Автоматизация» ниже).
+Личный vault на базе [obsidian-agent-base](https://github.com/popstas/obsidian-agent-base): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Node нужен только тому, кто развивает саму базу: тесты, changelog, release, генераторы и хуки Claude Code. Пользователю vault Node не нужен.
 
 **Конвенции живут в скилле `obsidian-vault`** (`skills/obsidian-vault/SKILL.md`): таксономия каталогов, куда попадает какой тип заметки, правила wikilinks, работа с чувствительным содержимым, настройки Obsidian. Читай его перед созданием, переносом и переименованием заметок и не дублируй его правила здесь.
 
@@ -28,7 +28,7 @@
 
 - `.claude/gen-tasks-json.cjs` — пересобирает `files/tasks.json` (счётчики задач) из `tasks.md`. Запускается на старте сессии и хуком `PostToolUse` (`.claude/hooks/tasks-changed.mjs`) после правок `tasks.md`. `files/tasks.json` в `.gitignore`; считаются только чекбоксы нулевого отступа.
 - `.claude/hooks/tasks-startup.mjs` — `SessionStart`: подсказка заглянуть в `tasks.md` и лог текущего дня.
-- `scripts/install-obsidian-plugins.mjs` — доставка Obsidian-плагинов по `obsidian-plugins.json`.
+- `scripts/install-obsidian-plugins.sh` / `.ps1` — доставка Obsidian-плагинов по `obsidian-plugins.json`. Две равноправные реализации: bash 3.2 + curl для macOS/Linux, PowerShell 5.1 для Windows. Node клиенту не нужен; он нужен только для разработки базы (тесты, changelog, release, генераторы) и для хуков Claude Code.
 
 ## Конвенции, на которых легко спотыкнуться
 

@@ -59,7 +59,7 @@ description: Удалить демо-контент из свежеразвёр�
 - **Да** — оставь всё, просто сообщи, что оставил.
 - **Нет** — удали пути из `baseOnly`, а также `package.json` и `CHANGELOG.md`, если пользователь не против потерять `npm test`.
 
-Не удаляй `scripts/` целиком: `install-obsidian-plugins.mjs` и `gen-skills-list.mjs` полезны и в личном vault.
+Не удаляй `scripts/` целиком: `install-obsidian-plugins.sh` / `.ps1` и `gen-skills-list.mjs` полезны и в личном vault.
 
 ### 5. Проверить, что демо не осталось в ссылках
 
