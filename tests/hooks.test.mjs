@@ -76,43 +76,50 @@ const psRunners = availablePs.length > 0
   ? availablePs
   : [{ label: 'PowerShell', cmd: null, skip: 'ни pwsh, ни powershell (Windows PowerShell 5.1) не найдены в PATH' }];
 
-// Убирает CRLF, оставленный PowerShell-переводом строк, не трогая остальные
-// байты — единственная ожидаемая разница между выводами bash и PowerShell.
-function stripCrBeforeLf(buf) {
-  const out = [];
-  for (let i = 0; i < buf.length; i++) {
-    if (buf[i] === 0x0d && buf[i + 1] === 0x0a) continue;
-    out.push(buf[i]);
-  }
-  return Buffer.from(out);
+// Кириллическая подстрока, которую ищем в сырых байтах вывода. Если вывод
+// ушёл не в UTF-8 (например, в CP866 на Windows PowerShell 5.1), этих байтов
+// в потоке не будет, даже когда JSON.parse после декодирования как UTF-8 не
+// падает — ConvertTo-Json на PS 5.1 форматирует иначе, чем heredoc bash
+// (другой отступ, лишний пробел после двоеточия, CRLF), поэтому побайтовое
+// сравнение bash- и PowerShell-вывода целиком недостижимо в принципе и не
+// про то, что здесь проверяется.
+const UTF8_MARKER = Buffer.from('Посмотри', 'utf8');
+
+function assertUtf8Output(raw, label) {
+  assert.ok(raw.includes(UTF8_MARKER),
+    `сырые байты вывода ${label} не содержат UTF-8-представление "Посмотри" — вывод ушёл не в UTF-8 ` +
+    '(например, в CP866 консоли на Windows 5.1 без [Console]::OutputEncoding = New-Object ' +
+    'System.Text.UTF8Encoding $false). JSON.parse на таких байтах может не упасть — получатель прочитает ' +
+    'синтаксически валидный, но испорченный JSON.');
 }
+
+// Проверка кодировки дешёвая и симметричная — гоняем и для bash, не только
+// для PowerShell: если байтов "Посмотри" нет и там, дело не в Windows.
+test('codex-хук на bash пишет UTF-8, а не что-то ещё', () => {
+  const raw = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')]);
+  assertUtf8Output(raw, 'bash');
+});
 
 for (const ps of psRunners) {
   const skip = ps.skip || false;
 
-  // Байтовое сравнение, а не только сравнение разобранных объектов: если
-  // Windows PowerShell 5.1 напишет stdout в консольную OEM-кодировку (CP866
-  // для русской локали) вместо UTF-8, JSON.parse после декодирования как
-  // UTF-8 может не упасть, но байты будут отличаться от bash-версии —
-  // именно это поймал живой прогон на Windows. Без [Console]::OutputEncoding
-  // = UTF8 (без BOM в потоке — BOM файла тут ни при чём) хук отдаёт
-  // синтаксически валидный, но испорченный JSON.
-  test(`codex-хук на PowerShell (${ps.label}) печатает те же байты, что и bash-версия`, { skip }, () => {
-    const shBuf = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')]);
-    const psBufRaw = execFileSync(ps.cmd, ['-NoProfile', '-File',
+  // Содержательный паритет — сравнение разобранных объектов, а не сырых
+  // строк: ConvertTo-Json на PS 5.1 форматирует иначе, чем bash-heredoc,
+  // при идентичном содержимом.
+  test(`codex-хук на PowerShell (${ps.label}) печатает тот же объект, что и bash-версия`, { skip }, () => {
+    const sh = execFileSync('bash', [join(REPO, '.codex', 'hooks', 'tasks-startup.sh')], { encoding: 'utf8' });
+    const out = execFileSync(ps.cmd, ['-NoProfile', '-File',
+      join(REPO, '.codex', 'hooks', 'tasks-startup.ps1')], { encoding: 'utf8' });
+    assert.deepStrictEqual(
+      JSON.parse(out.replace(/\r\n/g, '\n')).hookSpecificOutput,
+      JSON.parse(sh).hookSpecificOutput);
+  });
+
+  // Кодировка — отдельная проверка от содержательного паритета выше: именно
+  // она ловит регресс [Console]::OutputEncoding, который JSON.parse не ловит.
+  test(`codex-хук на PowerShell (${ps.label}) пишет UTF-8, а не что-то ещё`, { skip }, () => {
+    const raw = execFileSync(ps.cmd, ['-NoProfile', '-File',
       join(REPO, '.codex', 'hooks', 'tasks-startup.ps1')]);
-    const psBuf = stripCrBeforeLf(psBufRaw);
-
-    assert.deepEqual([...psBuf], [...shBuf],
-      'сырые байты вывода PowerShell не совпадают с bash побайтово (после нормализации CRLF→LF). ' +
-      'Если это падает, а JSON.parse ниже — нет, значит вывод PowerShell ушёл не в UTF-8 (например, в CP866 ' +
-      'консоли на Windows 5.1 без [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false) — ' +
-      'получатель прочитает синтаксически валидный, но испорченный JSON.');
-
-    // Дублирующая проверка на разобранном объекте — для читаемого диагноза,
-    // если байтовое сравнение выше когда-нибудь разъедется по форматированию.
-    assert.deepEqual(
-      JSON.parse(psBuf.toString('utf8')).hookSpecificOutput,
-      JSON.parse(shBuf.toString('utf8')).hookSpecificOutput);
+    assertUtf8Output(raw, `PowerShell (${ps.label})`);
   });
 }
