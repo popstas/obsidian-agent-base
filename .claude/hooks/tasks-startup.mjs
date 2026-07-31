@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // SessionStart: подсказать агенту заглянуть в задачи и лог текущего дня.
-// Node вместо bash — репозиторий должен работать на Windows.
+// Node, а не пара bash/PowerShell, как у Codex-близнеца (.codex/hooks/): у
+// Claude Code нет поля commandWindows, поэтому одной строкой команды две ОС
+// здесь не покрыть. Подробности — в INTEGRATION.md, раздел про хуки.
 const d = new Date();
 const p = (n) => String(n).padStart(2, '0');
 const [y, m, day] = [d.getFullYear(), p(d.getMonth() + 1), p(d.getDate())];
