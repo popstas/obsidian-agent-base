@@ -1,0 +1,19 @@
+{
+  "name": "obsidian-agent-base",
+  "owner": {
+    "name": "popstas",
+    "url": "https://github.com/popstas/obsidian-agent-base"
+  },
+  "metadata": {
+    "description": "Obsidian vault core for any coding agent",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "obsidian-agent-base",
+      "source": "./",
+      "version": "0.1.0",
+      "description": "Task ladder, daily journal, notes and weekly reports for an Obsidian vault driven by an agent."
+    }
+  ]
+}

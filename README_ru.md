@@ -2,79 +2,139 @@
 
 🇬🇧 [English](README.md) · 🇷🇺 Русский
 
-Обезличенное ядро рабочего процесса для ведения Obsidian-vault с агентом — **любым** (Claude Code, Codex, Hermes, OpenClaw, Antigravity и др.): задачи в `tasks.md`, дневник в `Log/`, заметки в `Notes/`, еженедельные отчёты в `Log/Reports/`. Переиспользуемые скиллы и скрипты без привязки к конкретному проекту, людям и инструментам.
+Обезличенное ядро рабочего процесса для ведения Obsidian-vault с агентом — **любым** (Claude Code, Codex, Cursor и др.): задачи в `tasks.md`, дневник в `Log/`, заметки в `Notes/`, еженедельные отчёты в `Log/Reports/`. Переиспользуемые скиллы и скрипты без привязки к конкретному проекту, людям и инструментам.
 
-## Integration prompt (copy-paste to your agent)
-
-Paste this into your agent from inside your own Obsidian vault / project. It installs the
-skills and **adapts them to you** instead of leaving the template placeholders:
-
-> Install the Obsidian-vault skills from https://github.com/popstas/obsidian-agent-base:
-> copy its `skills/*` into my `.claude/skills/`, and optionally the `.claude/` task-status
-> tooling (`gen-tasks-json.cjs`, `statusline.cjs`, `hooks/tasks-startup.sh`, merging — not
-> overwriting — `settings.json`). Then read the repo's `INTEGRATION.md` and run the
-> adaptation flow: ask me which setup level I want — **required** (~2–3 min: project
-> name + vault layout) or **detailed** (~10–15 min) — interview me one question at a time
-> with sensible defaults, and edit the copied templates to match my answers so no template
-> placeholders remain (e.g. `Platform/`, `Companies/`, `CRM`). Show me a diff at the end.
+Этот репозиторий — сразу три вещи: устанавливаемый плагин для Claude Code, Codex и Cursor; готовый к использованию Obsidian-vault, который клонируешь и адаптируешь под себя; и источник демо-контента, который удаляется после адаптации. Ниже — режим установки под твою задачу.
 
 ## Структура
 
 ```
-INTEGRATION.md           инструкция агенту: как адаптировать скиллы под пользователя
-skills/                  скиллы агента (по одному SKILL.md на скилл)
-  new-task/              добавить задачу в tasks.md (➕ YYYY-MM-DD)
-  close-task/            закрыть задачу (✅) + запись в дневной лог
-  list-tasks/            утренний обзор открытых задач, поиск старых
-  worklog/               запись хода работы в Log/YYYY-MM-DD.md
-  weekly-report/         еженедельный отчёт в Log/Reports/ (1 док/неделю, пн–вс)
-  decompose/             разбить задачи на подзадачи (AUTO / NEEDS-INPUT / RISKY)
-  learn/                 точечно улучшить скилл по опыту переписки
-  first-task-do/         взять первую задачу и начать с read-only исследования
-  obsidian-vault/        конвенции vault: таксономия, wikilinks, sensitivity
-  base-sync/             синхронизация наследника с base: diff, сводка, подтянуть/продвинуть
-.claude/                 статус задач + синхронизация с base
-  gen-tasks-json.cjs     парсит tasks.md → files/tasks.json (total/done/open)
-  statusline.cjs         статус-строка: 📋 done/total │ N open │ %
-  sync-base.cjs          хэши/классификация/diff скиллов наследника vs base
-  hooks/tasks-startup.sh SessionStart: подсказка посмотреть tasks.md и лог дня
-  settings.json          проводка statusLine + хуков (мерджить, не перезаписывать)
+skills/                  скиллы агента, по одному SKILL.md на скилл (читаются прямо в Obsidian)
+  Skills list.md         сгенерированный индекс всех скиллов
+.claude-plugin/          плагин Claude Code + однопродуктовый marketplace
+.codex-plugin/           манифест плагина для Codex
+.cursor-plugin/          манифест плагина для Cursor
+.claude/                 настройки, хуки, счётчик задач, синхронизация с base
+.codex/                  хуки Codex (подсказка на старте сессии), bash + PowerShell
+.obsidian/               настройки Obsidian, сниппеты, вендоренный tasks-mover
+scripts/                 список скиллов, демо-манифест, установщик плагинов, релиз
+tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.md
+Log/ Notes/ _templates/ files/
+obsidian-plugins.json    какие Obsidian-плагины ожидает vault
+demo-manifest.json       что удаляет demo-content-delete: демо-файлы, инструкции, файлы базы
 ```
 
-## Как подключить скиллы
+## Установка
 
-Скопируй нужные папки скиллов в `.claude/skills/` своего проекта:
+### Как новый vault (большинство пользователей)
 
 ```bash
-cp -r skills/* /path/to/your-project/.claude/skills/
+git clone https://github.com/popstas/obsidian-agent-base my-vault
+cd my-vault
+bash scripts/install-obsidian-plugins.sh     # macOS / Linux
 ```
 
-Скиллы самодостаточны (один `SKILL.md`, без скриптов). Они ссылаются друг на друга по имени (`[[new-task]]`, `[[worklog]]` и т.п.); ставь их вместе, чтобы ссылки были осмысленны.
+На Windows вместо этого:
 
-**Не копируй вслепую — это шаблоны.** В скиллах зашиты примеры (доменные папки, направления отчёта, трекер) и дефолты под абстрактный vault. После `cp` попроси агента прогнать [`INTEGRATION.md`](INTEGRATION.md): он спросит, какой уровень настройки нужен (обязательный ~2–3 мин / подробный ~10–15 мин), задаст вопросы и подстроит скопированные шаблоны под тебя — вместо того чтобы оставить чужие `Platform/` и `CRM`.
+```powershell
+git clone https://github.com/popstas/obsidian-agent-base my-vault
+cd my-vault
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
+```
 
-## Как подключить статус задач (tasks.json)
+(`-NoProfile` — чтобы разговорчивый профиль PowerShell не подмешал в вывод
+установщика своё, в том числе свою `OutputEncoding`.)
 
-1. Скопируй скрипты и хук:
-   ```bash
-   cp .claude/gen-tasks-json.cjs .claude/statusline.cjs /path/to/your-project/.claude/
-   mkdir -p /path/to/your-project/.claude/hooks
-   cp .claude/hooks/tasks-startup.sh /path/to/your-project/.claude/hooks/
-   ```
-2. **Смерджи** содержимое `.claude/settings.json` в `.claude/settings.json` своего проекта (не перезаписывай — добавь `statusLine` и блоки `hooks`).
-3. Готово: при записи в `tasks.md` и на старте сессии пересчитывается `files/tasks.json`, а статус-строка показывает прогресс.
+**Для установки и обновления плагинов не нужны ни Node, ни Python, ни `jq`** —
+ни на macOS/Linux, ни на Windows. На Node на клиенте остаются две вещи, и ни
+одна не входит в повседневный цикл:
 
-Что считается: верхнеуровневые чекбоксы `- [ ]` / `- [x]` в `tasks.md`. `done` — закрытые `- [x]`, `total` — все, `open = total - done`. Подпункты с отступом не учитываются. Зависимости: Node.js; для PostToolUse-хука — `jq`.
+- **Хуки Claude Code** (подсказка на старте сессии, счётчик задач). У Claude
+  Code нет поля для выбора команды по ОС, поэтому одной строкой две платформы
+  не покрыть — у Codex такое поле есть, и его хуки поэтому обходятся без Node.
+  Без Node хуки просто тихо не срабатывают: подсказку на старте даёт сам агент,
+  а счётчик задач у `weekly-report` имеет фолбэк на прямой подсчёт по `tasks.md`.
+- **`base-sync`** (`node .claude/sync-base.cjs`, см. ниже) — необязательный
+  сценарий подтягивания обновлений скиллов в уже адаптированный vault. Оставлен
+  на Node осознанно: к нему обращаются, только когда base ушёл вперёд.
+
+Не хочешь терминал — Obsidian поставит все плагины из `obsidian-plugins.json`
+сам: Settings → Community plugins → Browse.
+
+Открой папку как vault в Obsidian, запусти в ней сессию агента и скажи «адаптируй
+этот vault под меня». Агент следует `INTEGRATION.md`, интервьюирует тебя и в конце
+запускает скилл `demo-content-delete`, чтобы убрать демо-контент — примеры логов,
+отчёта и заметок, а по желанию и сами инструкции по развёртыванию.
+
+Лестница задач к этому не относится: задачи в `tasks.md` и `tasks-future.md` — это
+онбординг, который проходит каждый (прочитать README, перечислить, где ещё лежат
+задачи, перенести их сюда, записать первый день, собрать первый недельный отчёт).
+Их закрывают, а не удаляют.
+
+Обновления: `git pull`. Если ты кастомизировал скиллы, вместо этого используй скилл
+`base-sync` — он покажет, что изменилось в base, не затирая твои правки.
+
+> **Разовая настройка на каждой машине.** После клонирования один раз выполни в сессии
+> агента обе команды — без них скиллы из vault не активируются:
+> ```
+> /plugin marketplace add .
+> /plugin install obsidian-agent-base@obsidian-agent-base
+> ```
+> Добавление marketplace только регистрирует его; активирует скиллы плагина именно
+> `install`. Обе команды сохраняются в **пользовательском** `~/.claude/settings.json`,
+> а не в клоне, поэтому шаг повторяется на каждой машине, которой пользуешься, а не
+> один раз на vault.
+>
+> Вне сессии агента то же самое делается через `claude plugin marketplace add ./` —
+> голую `.` CLI отвергает: `Invalid marketplace source format`.
+
+### В существующий vault
+
+```
+/plugin marketplace add popstas/obsidian-agent-base
+/plugin install obsidian-agent-base@obsidian-agent-base
+```
+
+Одного добавления marketplace недостаточно — нужны обе команды. После `install` скиллы
+обновляются автоматически вместе с marketplace. Часть vault — лестницу задач и
+настройки `.obsidian` — сводишь руками; попроси агента провести тебя по `INTEGRATION.md`.
+
+Marketplace ставит только скиллы — счётчик задач и хуки в плагин не входят,
+это опциональные дополнения; где их взять, написано в `INTEGRATION.md`.
+
+### Только скиллы, в Codex или Cursor
+
+Тот же marketplace; манифесты `.codex-plugin/` и `.cursor-plugin/` указывают на тот же
+каталог `skills/`.
 
 ## Синхронизация с base после форка (skills-lock.json v2)
 
-После того как наследник адаптировал скиллы под себя, base продолжает развиваться. Чтобы подтягивать обновления, не затирая локальные кастомизации, есть скрипт `sync-base.cjs` и скилл `base-sync`.
+У vault, склонированного как «новый vault», уже есть `.claude/sync-base.cjs` и скилл
+`base-sync/` — копировать ничего не нужно. Base продолжает развиваться после того, как
+ты адаптировал скиллы под себя; чтобы подтягивать обновления, не затирая локальные
+кастомизации:
 
-1. Скопируй `.claude/sync-base.cjs` и скилл `base-sync/` в наследника.
-2. Один раз заведи точку отсчёта: `node .claude/sync-base.cjs bootstrap`. Он добавит блок `baseSync` в `skills-lock.json` (формат v2), сопоставит локальные имена скиллов с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`) и пометит уже разошедшиеся скиллы `customized: true`. Путь к чекауту base берётся из `baseSync.base.path` (по умолчанию `../../obsidian-agent-base`).
-3. Дальше по запросу: `node .claude/sync-base.cjs status` — таблица состояний (UNCHANGED / BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE), `diff <skill>` — различия, `stamp <skill>` — зафиксировать синхронизацию после ручного merge.
+1. Один раз заведи точку отсчёта: `node .claude/sync-base.cjs bootstrap`. Он добавит
+   блок `baseSync` в `skills-lock.json` (формат v2), сопоставит локальные имена скиллов
+   с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`)
+   и пометит уже разошедшиеся скиллы `customized: true`. Путь к чекауту base берётся из
+   `baseSync.base.path` (по умолчанию `../../obsidian-agent-base`).
 
-`skills-lock.json` v2 совместим с v1: прежние записи внешних github-скиллов (`skills`) не трогаются, добавляется отдельный блок `baseSync`. Хэш скилла считается без строк `name:`/`description:` во frontmatter — они легитимно различаются у наследников и не создают ложных расхождений. Разговорную часть (что подтянуть, что оставить, как продвинуть улучшение обратно в base) ведёт скилл `base-sync`; скрипт сам файлы скиллов не редактирует.
+   Клон base должен физически лежать по этому пути **до** запуска: `bootstrap` не
+   скачивает его сам и падает с «Не найден base». Следи и за веткой клона — bootstrap
+   видит только те скиллы, что есть в base на его текущем коммите; про остальные
+   локальные скиллы он предупредит отдельной строкой, но в lock они не попадут.
+2. Дальше по запросу: `node .claude/sync-base.cjs status` — таблица состояний
+   (UNCHANGED / BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE),
+   `diff <skill>` — различия, `stamp <skill>` — зафиксировать синхронизацию после
+   ручного merge.
+
+`skills-lock.json` v2 совместим с v1: прежние записи внешних github-скиллов (`skills`) не
+трогаются, добавляется отдельный блок `baseSync`. Хэш скилла считается без строк
+`name:`/`description:` во frontmatter — они легитимно различаются у наследников и не
+создают ложных расхождений. Разговорную часть (что подтянуть, что оставить, как
+продвинуть улучшение обратно в base) ведёт скилл `base-sync`; скрипт сам файлы скиллов
+не редактирует.
 
 ## Формат задач (tasks.md)
 
@@ -88,7 +148,9 @@ cp -r skills/* /path/to/your-project/.claude/skills/
 # Week+
 - [ ] Задача на неделю+ ➕ 2026-06-02
 
-> Активные задачи. Будущие: [[tasks-future]].
+> Активные задачи. Будущие: [[tasks-future]]. Отложенные: [[tasks-snoozed]]. Проекты: [[projects]].
 ```
 
 `➕ YYYY-MM-DD` — дата создания, `✅ YYYY-MM-DD` — дата закрытия. Подбуллеты — табом. Файл разбит на две секции: `# Week:` — текущая неделя (вверху держатся завершённые `- [x]`, ниже открытые), `# Week+` — более долгий горизонт. Строка-легенда под `# Week+` ссылается на бэклог `tasks-future.md`.
+
+> Демо-файл: скилл `demo-content-delete` предложит удалить этот файл.

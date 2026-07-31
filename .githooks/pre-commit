@@ -1,0 +1,9 @@
+#!/bin/sh
+# Держит skills/Skills list.md в актуальном виде. Включается один раз:
+#   git config core.hooksPath .githooks
+# Хуки не переживают clone, поэтому основная гарантия — проверка в CI.
+set -e
+if git diff --cached --name-only | grep -q '^skills/.*/SKILL\.md$'; then
+  node scripts/gen-skills-list.mjs
+  git add "skills/Skills list.md"
+fi

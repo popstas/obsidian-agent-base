@@ -1,0 +1,74 @@
+/* Вкладки редактора по ширине заголовка (вместо фиксированной --tab-width).
+   Скоуп только на .mod-root — боковые панели не трогаем. */
+
+.workspace-split.mod-root .workspace-tab-header {
+  /* КОРЕНЬ ПРОБЛЕМЫ: Obsidian ставит container-type: inline-size, из-за чего
+     ширина вкладки считается БЕЗ учёта контента (max-content схлопывается в
+     padding). Отключаем контейнеризацию — только тогда работает подгонка. */
+  container-type: normal !important;
+
+  width: max-content !important;
+  min-width: max-content !important;
+  max-width: 240px !important; /* потолок для длинных имён; убери строку, чтобы снять ограничение */
+  flex: 0 0 auto !important;   /* вместо flex: 1 1 0 — не растягивать по ширине контейнера */
+}
+
+.workspace-split.mod-root .workspace-tab-header-inner {
+  position: relative !important; /* гарантируем поток, чтобы header видел контент */
+  width: max-content !important;
+}
+
+.workspace-split.mod-root .workspace-tab-header-inner-title {
+  white-space: nowrap;
+}
+
+/* Кнопка закрытия при наведении не должна расширять вкладку: вынимаем её из
+   потока (position: absolute) и рисуем поверх текста у правого края.
+   Ширина вкладки считается только по иконке + заголовку. */
+.workspace-split.mod-root .workspace-tab-header-inner-close-button {
+  position: absolute !important;
+  top: 50%;
+  right: var(--size-2-2, 4px);
+  transform: translateY(-50%);
+  margin: 0 !important; /* убираем margin, которым Obsidian раздвигает контент */
+  z-index: 2; /* крестик поверх градиентной подложки */
+}
+
+/* Градиент-подложка под крестиком: затеняет текст под ним, плавно уходя в фон
+   вкладки. Появляется вместе с крестиком — только на hover. */
+.workspace-split.mod-root .workspace-tab-header:hover .workspace-tab-header-inner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2.5em;
+  height: 100%;
+  z-index: 1; /* выше заголовка, ниже крестика */
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--tab-container-background) 60%);
+}
+
+/* Крестик на активной вкладке. Obsidian по умолчанию показывает его ВСЕГДА
+   (правило display:none стоит только на :not(.is-active)), а наш градиент —
+   только на hover. Из-за рассинхрона в покое виден голый крестик поверх
+   непритенённого текста. Приводим к общему поведению: крестик только при
+   наведении, как у неактивных вкладок. */
+.workspace-split.mod-root .workspace-tab-header.is-active .workspace-tab-header-inner-close-button {
+  display: none !important;
+}
+.workspace-split.mod-root .workspace-tab-header.is-active:hover .workspace-tab-header-inner-close-button {
+  display: flex !important;
+}
+
+/* На активной вкладке Obsidian принудительно гасит ::after:
+   `.workspace-tab-header.is-active .workspace-tab-header-inner::after { opacity: 0 }`.
+   Именно поэтому подложка была полностью невидима только на активной вкладке
+   (на неактивных opacity не трогается). Возвращаем видимость.
+   Плюс активная вкладка имеет собственный сплошной фон --tab-background-active
+   (у неактивных — --tab-container-background), поэтому и цвет затухания берём
+   под активную вкладку, иначе виден чужеродный оттенок. */
+.workspace-split.mod-root .workspace-tab-header.is-active:hover .workspace-tab-header-inner::after {
+  opacity: 1 !important;
+  background: linear-gradient(to right, transparent, var(--tab-background-active) 60%);
+}

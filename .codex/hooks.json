@@ -1,0 +1,19 @@
+{
+  "description": "Hooks for the obsidian-agent-base vault",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/tasks-startup.sh",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex\\hooks\\tasks-startup.ps1",
+            "timeout": 10,
+            "statusMessage": "Loading tasks"
+          }
+        ]
+      }
+    ]
+  }
+}

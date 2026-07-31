@@ -1,31 +1,29 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "node .claude/statusline.cjs"
+  "extraKnownMarketplaces": {
+    "obsidian-agent-base": {
+      "source": { "source": "directory", "path": "." }
+    }
+  },
+  "enabledPlugins": {
+    "obsidian-agent-base@obsidian-agent-base": true
+  },
+  "env": {
+    "STATUSLINE_TODO": "tasks.md"
   },
   "hooks": {
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
         "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // \"\"' | grep -qF 'tasks.md' && node .claude/gen-tasks-json.cjs || true"
-          }
+          { "type": "command", "command": "node .claude/hooks/tasks-changed.mjs" }
         ]
       }
     ],
     "SessionStart": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "node .claude/gen-tasks-json.cjs || true"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/tasks-startup.sh"
-          }
+          { "type": "command", "command": "node .claude/gen-tasks-json.cjs" },
+          { "type": "command", "command": "node .claude/hooks/tasks-startup.mjs" }
         ]
       }
     ]

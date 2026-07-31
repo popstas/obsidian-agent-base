@@ -1,0 +1,53 @@
+[changelog]
+# Только вечные утверждения о проекте — верны для любого релиза, поэтому
+# безопасно перегенерировать их заново каждый раз. Номера версии тут нет
+# нарочно: version определяется per-release в body (см. ниже). Раньше здесь
+# был захардкожен "## 0.1.0" — следующий релиз молча подшивался бы под ним
+# же, потому что header рендерится один раз на весь файл, а не на релиз.
+header = """
+# Changelog
+
+> Дневные логи лежат вложенно — `Log/YYYY/MM/YYYY-MM-DD.md`; недельные отчёты по-прежнему лежат плоско в `Log/Reports/`.
+>
+> Репозиторий до-единичный: breaking changes едут минорным бампом, с пометкой BREAKING под версией, где они случились.
+
+"""
+# В отличие от header, body рендерится отдельно для каждого релиза (git-cliff
+# группирует коммиты по тегам), поэтому номер версии и BREAKING-пометка тут —
+# per-release. BREAKING берётся из commit.breaking_description — из трейлера
+# `BREAKING CHANGE:` коммита aa55b74 — а не вписан руками, поэтому остаётся
+# у того релиза, где случился, и не переезжает вместе с header.
+body = """
+{% if version %}\
+## {{ version | trim_start_matches(pat="v") }}
+{% else %}\
+## Unreleased
+{% endif %}
+{% for commit in commits %}{% if commit.breaking %}
+> **BREAKING.** {{ commit.breaking_description }}
+{% endif %}{% endfor %}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}\n
+"""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+commit_parsers = [
+  { message = "^feat", group = "Features" },
+  { message = "^fix", group = "Bug Fixes" },
+  { message = "^docs", group = "Documentation" },
+  { message = "^test", group = "Testing" },
+  { message = "^refactor", group = "Refactor" },
+  # Без явного правила git-cliff берёт группу из самого типа и прогоняет её
+  # через upper_first — в заголовке релиза получалось "### Ci".
+  { message = "^ci", group = "CI" },
+  { message = "^chore", skip = true },
+]
+tag_pattern = "v[0-9]*"
+sort_commits = "oldest"

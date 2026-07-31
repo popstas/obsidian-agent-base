@@ -2,79 +2,138 @@
 
 🇬🇧 English · 🇷🇺 [Русский](README_ru.md)
 
-A depersonalized core workflow for keeping an Obsidian vault with an agent — **any** agent (Claude Code, Codex, Hermes, OpenClaw, Antigravity, etc.): tasks in `tasks.md`, a journal in `Log/`, notes in `Notes/`, weekly reports in `Log/Reports/`. Reusable skills and scripts with no ties to a specific project, people, or tools.
+A depersonalized core workflow for keeping an Obsidian vault with an agent — **any** agent (Claude Code, Codex, Cursor, and others): tasks in `tasks.md`, a journal in `Log/`, notes in `Notes/`, weekly reports in `Log/Reports/`. Reusable skills and scripts with no ties to a specific project, people, or tools.
 
-## Integration prompt (copy-paste to your agent)
-
-Paste this into your agent from inside your own Obsidian vault / project. It installs the
-skills and **adapts them to you** instead of leaving the template placeholders:
-
-> Install the Obsidian-vault skills from https://github.com/popstas/obsidian-agent-base:
-> copy its `skills/*` into my `.claude/skills/`, and optionally the `.claude/` task-status
-> tooling (`gen-tasks-json.cjs`, `statusline.cjs`, `hooks/tasks-startup.sh`, merging — not
-> overwriting — `settings.json`). Then read the repo's `INTEGRATION.md` and run the
-> adaptation flow: ask me which setup level I want — **required** (~2–3 min: project
-> name + vault layout) or **detailed** (~10–15 min) — interview me one question at a time
-> with sensible defaults, and edit the copied templates to match my answers so no template
-> placeholders remain (e.g. `Platform/`, `Companies/`, `CRM`). Show me a diff at the end.
+This repository is three things at once: an installable plugin for Claude Code, Codex, and Cursor; a ready-to-use Obsidian vault you clone and adapt; and the source of a demo you delete once you've adapted it. Pick the install mode below that matches what you're doing.
 
 ## Structure
 
 ```
-INTEGRATION.md           guide for the agent: how to adapt the skills to the user
-skills/                  agent skills (one SKILL.md per skill)
-  new-task/              add a task to tasks.md (➕ YYYY-MM-DD)
-  close-task/            close a task (✅) + write to the daily log
-  list-tasks/            morning review of open tasks, find stale ones
-  worklog/               log work progress in Log/YYYY-MM-DD.md
-  weekly-report/         weekly report in Log/Reports/ (1 doc/week, Mon–Sun)
-  decompose/             break tasks into subtasks (AUTO / NEEDS-INPUT / RISKY)
-  learn/                 surgically improve a skill from conversation experience
-  first-task-do/         pick the first task and start with read-only research
-  obsidian-vault/        vault conventions: taxonomy, wikilinks, sensitivity
-  base-sync/             sync a fork with base: diff, summary, pull/push changes
-.claude/                 task status + sync with base
-  gen-tasks-json.cjs     parses tasks.md → files/tasks.json (total/done/open)
-  statusline.cjs         status line: 📋 done/total │ N open │ %
-  sync-base.cjs          hashes/classification/diff of fork skills vs base
-  hooks/tasks-startup.sh SessionStart: hint to check tasks.md and the day's log
-  settings.json          wiring for statusLine + hooks (merge, don't overwrite)
+skills/                  agent skills, one SKILL.md per skill (browsable in Obsidian)
+  Skills list.md         generated index of all skills
+.claude-plugin/          Claude Code plugin + single-plugin marketplace
+.codex-plugin/           Codex plugin manifest
+.cursor-plugin/          Cursor plugin manifest
+.claude/                 settings, hooks, task counter, base sync
+.codex/                  Codex hooks (session-start reminder), bash + PowerShell
+.obsidian/               Obsidian settings, snippets, vendored tasks-mover
+scripts/                 skills list, demo manifest, plugin installer, release
+tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.md
+Log/ Notes/ _templates/ files/
+obsidian-plugins.json    which Obsidian plugins the vault expects
+demo-manifest.json       what demo-content-delete removes: demo files, setup docs, base-only paths
 ```
 
-## How to install the skills
+## Install
 
-Copy the skill folders you need into your project's `.claude/skills/`:
+### As a new vault (most people)
 
 ```bash
-cp -r skills/* /path/to/your-project/.claude/skills/
+git clone https://github.com/popstas/obsidian-agent-base my-vault
+cd my-vault
+bash scripts/install-obsidian-plugins.sh     # macOS / Linux
 ```
 
-The skills are self-contained (a single `SKILL.md`, no scripts). They reference each other by name (`[[new-task]]`, `[[worklog]]`, etc.); install them together so the links make sense.
+On Windows, run this instead:
 
-**Don't copy them blindly — they are templates.** The skills bake in examples (domain folders, report dimensions, a tracker) and defaults for an abstract vault. After `cp`, ask your agent to run [`INTEGRATION.md`](INTEGRATION.md): it asks which setup level you want (required ~2–3 min / detailed ~10–15 min), interviews you, and tailors the copied templates to you — instead of leaving someone else's `Platform/` and `CRM` behind.
+```powershell
+git clone https://github.com/popstas/obsidian-agent-base my-vault
+cd my-vault
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
+```
 
-## How to install the task status (tasks.json)
+(`-NoProfile` keeps a chatty PowerShell profile from mixing its own output — or
+its own `OutputEncoding` — into the installer's.)
 
-1. Copy the scripts and the hook:
-   ```bash
-   cp .claude/gen-tasks-json.cjs .claude/statusline.cjs /path/to/your-project/.claude/
-   mkdir -p /path/to/your-project/.claude/hooks
-   cp .claude/hooks/tasks-startup.sh /path/to/your-project/.claude/hooks/
-   ```
-2. **Merge** the contents of `.claude/settings.json` into your project's `.claude/settings.json` (don't overwrite — add the `statusLine` and `hooks` blocks).
-3. Done: on writes to `tasks.md` and at session start, `files/tasks.json` is recomputed and the status line shows progress.
+**Installing and updating plugins needs no Node, Python, or `jq`** — neither on
+macOS/Linux nor on Windows. Two things on the client do still run on Node, and
+neither is part of the daily loop:
 
-What counts: top-level checkboxes `- [ ]` / `- [x]` in `tasks.md`. `done` — closed `- [x]`, `total` — all, `open = total - done`. Indented sub-items are not counted. Dependencies: Node.js; for the PostToolUse hook — `jq`.
+- **Claude Code hooks** (session-start reminder, task counter). Claude Code has
+  no per-OS command field, so one command string can't cover both platforms —
+  Codex has one, which is why its hooks need no Node. Without Node the hooks
+  just silently no-op: the agent gives the session-start reminder itself, and
+  `weekly-report`'s task counter falls back to counting `tasks.md` directly.
+- **`base-sync`** (`node .claude/sync-base.cjs`, see below) — the optional
+  workflow for pulling upstream skill updates into a customized vault. Kept on
+  Node deliberately; you only reach for it when base has moved on.
+
+Prefer clicking? Obsidian can install every plugin from
+`obsidian-plugins.json` through Settings → Community plugins → Browse.
+
+Open the folder as a vault in Obsidian, then start an agent session in it and say
+"adapt this vault to me". The agent follows `INTEGRATION.md`, interviews you, and
+finishes by running the `demo-content-delete` skill to strip the demo content — the
+example logs, report, and notes, plus, if you want, the setup docs themselves.
+
+The task ladder is not part of that: the tasks shipped in `tasks.md` and
+`tasks-future.md` are onboarding every user actually does — read the README, list
+where else your tasks live, move them here, log your first day, write the first
+weekly report. You close them, you don't delete them.
+
+Updates: `git pull`. If you have customized the skills, use the `base-sync` skill
+instead — it shows what changed upstream without clobbering your edits.
+
+> **One-time setup per machine.** After cloning, run these two commands once in an agent
+> session — the bundled skills stay inactive until you do both:
+> ```
+> /plugin marketplace add .
+> /plugin install obsidian-agent-base@obsidian-agent-base
+> ```
+> Adding the marketplace only registers it; the `install` step actually activates the
+> plugin's skills. Both are recorded in your **user-level** `~/.claude/settings.json`, not
+> in the clone, so you repeat this on each machine you use, not once per vault.
+>
+> Outside an agent session the equivalent is `claude plugin marketplace add ./` — the CLI
+> rejects a bare `.` with `Invalid marketplace source format`.
+
+### Into an existing vault
+
+```
+/plugin marketplace add popstas/obsidian-agent-base
+/plugin install obsidian-agent-base@obsidian-agent-base
+```
+
+Adding the marketplace alone does not install anything — run both commands. Once
+installed, skills auto-update with the marketplace. The vault side — the task ladder and
+the `.obsidian` settings — is merged by hand; ask your agent to walk you through
+`INTEGRATION.md`.
+
+The marketplace brings the skills only — the task counter and hooks are optional
+extras, not part of the plugin; `INTEGRATION.md` says where to get them.
+
+### Skills only, in Codex or Cursor
+
+Same marketplace; the `.codex-plugin/` and `.cursor-plugin/` manifests point at the
+same `skills/` directory.
 
 ## Syncing with base after a fork (skills-lock.json v2)
 
-After a fork has adapted the skills to itself, base keeps evolving. To pull updates without clobbering local customizations, there is a `sync-base.cjs` script and a `base-sync` skill.
+A vault cloned as in "As a new vault" already has `.claude/sync-base.cjs` and the
+`base-sync/` skill — nothing to copy. Base keeps evolving after you've adapted the
+skills to yourself; to pull updates without clobbering local customizations:
 
-1. Copy `.claude/sync-base.cjs` and the `base-sync/` skill into the fork.
-2. Establish a baseline once: `node .claude/sync-base.cjs bootstrap`. It adds a `baseSync` block to `skills-lock.json` (format v2), maps local skill names to base via aliases (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), and marks already-diverged skills `customized: true`. The path to the base checkout is read from `baseSync.base.path` (default `../../obsidian-agent-base`).
-3. Then on demand: `node .claude/sync-base.cjs status` — a table of states (UNCHANGED / BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE), `diff <skill>` — the differences, `stamp <skill>` — record the sync after a manual merge.
+1. Establish a baseline once: `node .claude/sync-base.cjs bootstrap`. It adds a
+   `baseSync` block to `skills-lock.json` (format v2), maps local skill names to base
+   via aliases (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), and
+   marks already-diverged skills `customized: true`. The path to the base checkout is
+   read from `baseSync.base.path` (default `../../obsidian-agent-base`).
 
-`skills-lock.json` v2 is compatible with v1: existing entries for external GitHub skills (`skills`) are left untouched; a separate `baseSync` block is added. A skill's hash is computed without the `name:`/`description:` lines in the frontmatter — they legitimately differ across forks and shouldn't create false mismatches. The conversational part (what to pull, what to keep, how to push an improvement back to base) is handled by the `base-sync` skill; the script itself never edits skill files.
+   The base checkout must already exist at that path **before** you run this:
+   `bootstrap` doesn't clone it for you and fails with "Base not found" if it's
+   missing. Also mind the checkout's branch — bootstrap only sees skills that exist
+   in base at its current commit; any other local skills get a separate warning line,
+   but they won't be tracked in the lock.
+2. Then on demand: `node .claude/sync-base.cjs status` — a table of states (UNCHANGED /
+   BASE-CHANGED / LOCALLY-MODIFIED / BOTH-CHANGED / NEW-IN-BASE), `diff <skill>` — the
+   differences, `stamp <skill>` — record the sync after a manual merge.
+
+`skills-lock.json` v2 is compatible with v1: existing entries for external GitHub skills
+(`skills`) are left untouched; a separate `baseSync` block is added. A skill's hash is
+computed without the `name:`/`description:` lines in the frontmatter — they legitimately
+differ across forks and shouldn't create false mismatches. The conversational part (what
+to pull, what to keep, how to push an improvement back to base) is handled by the
+`base-sync` skill; the script itself never edits skill files.
 
 ## Task format (tasks.md)
 
@@ -88,7 +147,9 @@ After a fork has adapted the skills to itself, base keeps evolving. To pull upda
 # Week+
 - [ ] Longer-horizon task ➕ 2026-06-02
 
-> Active tasks. Future ones: [[tasks-future]].
+> Active tasks. Future ones: [[tasks-future]]. Snoozed: [[tasks-snoozed]]. Projects: [[projects]].
 ```
 
 `➕ YYYY-MM-DD` — creation date, `✅ YYYY-MM-DD` — completion date. Sub-bullets use a tab. The file is split into two sections: `# Week:` — the current week (completed `- [x]` stay at the top, open ones below), `# Week+` — a longer horizon. The legend line under `# Week+` links to the `tasks-future.md` backlog.
+
+> Demo file: the `demo-content-delete` skill will offer to delete this file.
