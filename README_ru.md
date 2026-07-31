@@ -41,8 +41,13 @@ cd my-vault
 powershell -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
 ```
 
-Ни Node, ни Python, ни `jq` не нужны — vault работает на том, что уже есть
-в стандартной macOS или Windows. Node нужен только для разработки самой базы.
+Ни Node, ни Python, ни `jq` не нужны для установки и обновления плагинов —
+ни на macOS/Linux, ни на Windows. Единственное, что на клиенте всё ещё
+держится на Node, — хуки Claude Code (подсказка на старте сессии, счётчик
+задач): у Claude Code нет поля для выбора команды по ОС, поэтому одной
+строкой две платформы не покрыть. Без Node они просто тихо не срабатывают —
+подсказку на старте даёт сам агент, а счётчик задач у `weekly-report` имеет
+фолбэк на прямой подсчёт по `tasks.md`.
 Не хочешь терминал — Obsidian поставит все плагины из `obsidian-plugins.json`
 сам: Settings → Community plugins → Browse.
 

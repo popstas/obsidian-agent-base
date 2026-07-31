@@ -41,8 +41,13 @@ cd my-vault
 powershell -ExecutionPolicy Bypass -File scripts\install-obsidian-plugins.ps1
 ```
 
-No Node, Python, or `jq` required — the vault runs on what a stock macOS or
-Windows already ships. Node is only needed to develop the base itself.
+No Node, Python, or `jq` required to install or update plugins — neither on
+macOS/Linux nor on Windows. The only thing on the client that still runs on
+Node is the Claude Code hooks (session-start reminder, task counter): Claude
+Code has no per-OS command field, so one command string can't cover both
+platforms. Without Node they just silently no-op — the agent gives the
+session-start reminder itself, and `weekly-report`'s task counter falls back
+to counting `tasks.md` directly.
 Prefer clicking? Obsidian can install every plugin from
 `obsidian-plugins.json` through Settings → Community plugins → Browse.
 
