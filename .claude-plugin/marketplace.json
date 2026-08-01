@@ -1,19 +1,19 @@
 {
-  "name": "obsidian-agent-base",
+  "name": "obsidian-agent-workspace",
   "owner": {
     "name": "popstas",
-    "url": "https://github.com/popstas/obsidian-agent-base"
+    "url": "https://github.com/popstas/obsidian-agent-workspace"
   },
   "metadata": {
-    "description": "Obsidian vault core for any coding agent",
+    "description": "Agent Workspace — a personal workspace driven by an AI agent",
     "version": "0.1.0"
   },
   "plugins": [
     {
-      "name": "obsidian-agent-base",
+      "name": "obsidian-agent-workspace",
       "source": "./",
       "version": "0.1.0",
-      "description": "Task ladder, daily journal, notes and weekly reports for an Obsidian vault driven by an agent."
+      "description": "Task ladder, daily journal, notes and weekly reports for a workspace driven by an AI agent."
     }
   ]
 }

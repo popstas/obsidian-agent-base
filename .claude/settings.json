@@ -1,11 +1,11 @@
 {
   "extraKnownMarketplaces": {
-    "obsidian-agent-base": {
+    "obsidian-agent-workspace": {
       "source": { "source": "directory", "path": "." }
     }
   },
   "enabledPlugins": {
-    "obsidian-agent-base@obsidian-agent-base": true
+    "obsidian-agent-workspace@obsidian-agent-workspace": true
   },
   "env": {
     "STATUSLINE_TODO": "tasks.md"

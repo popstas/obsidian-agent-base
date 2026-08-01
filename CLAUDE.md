@@ -4,7 +4,7 @@
 
 ## Что это
 
-Личный vault на базе [obsidian-agent-base](https://github.com/popstas/obsidian-agent-base): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Node в этом vault держат две вещи: хуки Claude Code (счётчик задач, подсказка на старте сессии) и скрипт `base-sync` (`.claude/sync-base.cjs`) — см. «Автоматизация» ниже. Установка и обновление плагинов Node не требуют ни на macOS/Linux, ни на Windows.
+Личный vault на базе [obsidian-agent-workspace](https://github.com/popstas/obsidian-agent-workspace): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Node в этом vault держат две вещи: хуки Claude Code (счётчик задач, подсказка на старте сессии) и скрипт `base-sync` (`.claude/sync-base.cjs`) — см. «Автоматизация» ниже. Установка и обновление плагинов Node не требуют ни на macOS/Linux, ни на Windows.
 
 **Конвенции живут в скилле `obsidian-vault`** (`skills/obsidian-vault/SKILL.md`): таксономия каталогов, куда попадает какой тип заметки, правила wikilinks, работа с чувствительным содержимым, настройки Obsidian. Читай его перед созданием, переносом и переименованием заметок и не дублируй его правила здесь.
 

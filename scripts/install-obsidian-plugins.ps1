@@ -103,7 +103,7 @@ function Invoke-Install {
   # Invoke-WebRequest на 5.1 честно пробрасывает его дальше — то есть с
   # выставленным GITHUB_TOKEN установщик падал бы на каждом скачивании, а сам
   # токен уезжал бы на CDN-хост. $headers ниже — без авторизации, намеренно.
-  $headers = @{ 'user-agent' = 'obsidian-agent-base' }
+  $headers = @{ 'user-agent' = 'obsidian-agent-workspace' }
   $apiHeaders = $headers.Clone()
   $apiHeaders['accept'] = 'application/vnd.github+json'
   if ($env:GITHUB_TOKEN) { $apiHeaders['authorization'] = "Bearer $env:GITHUB_TOKEN" }

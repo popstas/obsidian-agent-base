@@ -1,5 +1,5 @@
 {
-  "description": "Hooks for the obsidian-agent-base vault",
+  "description": "Hooks for the obsidian-agent-workspace vault",
   "hooks": {
     "SessionStart": [
       {

@@ -417,7 +417,7 @@ close-task, list-tasks, weekly-report, obsidian-vault; задачи ведутс
 него не входят. Если они нужны в режиме 2 или 3, возьми их из base-репозитория:
 
 ```bash
-git clone --depth 1 https://github.com/popstas/obsidian-agent-base /tmp/oab
+git clone --depth 1 https://github.com/popstas/obsidian-agent-workspace /tmp/oab
 ```
 
 и скопируй в `.claude/` целевого vault три пути: `.claude/gen-tasks-json.cjs`,
@@ -497,7 +497,7 @@ Codex, но не у Claude Code, поэтому одной строкой две
    В режиме 3 (только скиллы) этот шаг не выполняй: там `origin` — уже собственный
    приватный remote пользователя, а не публичная база, и его переименование и отключение
    push сломает то, что он сам настроил.
-2. Один раз: `node .claude/sync-base.cjs bootstrap` — заводит блок `baseSync` в `skills-lock.json`, сопоставляет локальные имена с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), помечает уже разошедшиеся скиллы `customized: true`, отсутствующие у наследника — `status: "not-imported"`. Путь к base — в `baseSync.base.path` (дефолт `../../obsidian-agent-base`); поправь, если base лежит иначе.
+2. Один раз: `node .claude/sync-base.cjs bootstrap` — заводит блок `baseSync` в `skills-lock.json`, сопоставляет локальные имена с base по алиасам (`add-task→new-task`, `list→list-tasks`, `*-vault→obsidian-vault`), помечает уже разошедшиеся скиллы `customized: true`, отсутствующие у наследника — `status: "not-imported"`. Путь к base — в `baseSync.base.path` (дефолт `../../obsidian-agent-workspace`); поправь, если base лежит иначе.
 
    Клон base должен физически лежать по этому пути **до** запуска: `bootstrap` не
    скачивает его сам и падает с «Не найден base». И следи за веткой клона — bootstrap

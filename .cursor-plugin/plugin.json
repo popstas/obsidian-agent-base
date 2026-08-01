@@ -1,14 +1,14 @@
 {
-  "name": "obsidian-agent-base",
-  "displayName": "Obsidian Agent Base",
-  "description": "Obsidian vault core for any coding agent: task ladder in tasks.md, journal in Log/, notes in Notes/, weekly reports — as reusable skills.",
+  "name": "obsidian-agent-workspace",
+  "displayName": "Agent Workspace",
+  "description": "Agent Workspace: task ladder in tasks.md, journal in Log/, notes in Notes/, weekly reports — as reusable skills for any coding agent.",
   "version": "0.1.0",
   "author": {
     "name": "Stanislav Popov",
     "url": "https://github.com/popstas"
   },
-  "homepage": "https://github.com/popstas/obsidian-agent-base",
-  "repository": "https://github.com/popstas/obsidian-agent-base",
+  "homepage": "https://github.com/popstas/obsidian-agent-workspace",
+  "repository": "https://github.com/popstas/obsidian-agent-workspace",
   "license": "MIT",
   "keywords": [
     "obsidian",
