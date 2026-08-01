@@ -22,6 +22,8 @@ tasks.md projects.md tasks-future.md tasks-snoozed.md tasks-recurring.md ideas.m
 Log/ Notes/ _templates/ files/
 obsidian-plugins.json    which Obsidian plugins the vault expects
 demo-manifest.json       what demo-content-delete removes: demo files, setup docs, base-only paths
+.stignore                Syncthing ignores for this device (a single #include line)
+.stignore-common         the shared ignore rules, synced between machines
 ```
 
 ## Install
@@ -106,6 +108,45 @@ extras, not part of the plugin; `INTEGRATION.md` says where to get them.
 
 Same marketplace; the `.codex-plugin/` and `.cursor-plugin/` manifests point at the
 same `skills/` directory.
+
+## Syncing the vault across devices (Syncthing)
+
+A vault is a plain folder, so anything can sync it; the ignore rules shipped here are written
+for [Syncthing](https://syncthing.net/). There is nothing to set up: add the vault folder as a
+folder on each device — the files are already in place.
+
+- **`.stignore`** — the per-device file. Syncthing **never** propagates it between machines,
+  which is exactly why it lives in git: a clone arrives with it ready. It holds a single
+  meaningful line — `#include .stignore-common` — plus room for rules local to that machine.
+- **`.stignore-common`** — the rules themselves, and these *are* synced. Edit them on one
+  machine and they reach the rest; no per-device copies to maintain.
+
+Not synced — per-device state: `workspace*.json` (open tabs, the number-one source of
+conflicts), `app.json`, `graph.json`, plugin settings and caches (`plugins/*/data.json`,
+`*.db`, `cache/`), `.trash`, `.git`, the generated `files/tasks.json`,
+`.claude/settings.local.json`, and OS junk. Synced on purpose: `community-plugins.json`,
+`core-plugins.json`, `appearance.json`, `hotkeys.json`, snippets, plugin code, and the
+settings of the two plugins the vault owns — `file-explorer-plus` and `obsidian-icon-folder`.
+
+The condition those shared json files still depend on: **Obsidian runs on one machine at a
+time**, and you don't edit those files on disk while it's open — it will overwrite them with
+its own state. Conflicts in the notes themselves are deliberately not ignored: a
+`*.sync-conflict-*` file next to a note is something you want to see and resolve by hand.
+
+Two cases need one manual step:
+
+- **The vault reached a machine by sync only, without a clone** — create `.stignore` there
+  with that same `#include .stignore-common` line, or the device will start pulling other
+  machines' `workspace.json`.
+- **You sync a parent folder holding several vaults** rather than each vault separately — in
+  that folder's root `.stignore` write `#include <vault>/.stignore-common` (an `#include`
+  path is resolved from the folder root). The rules in common are written to work in both
+  layouts.
+
+`.obsidian/app.json` is the one file git distributes and sync does not: mobile Obsidian writes
+`mobileToolbarCommands` into it and the desktop app strips them, so phone and desktop conflict
+over it every time. The clone hands out the default once; after that each device keeps its
+own. The divergence is pinned by a test (`tests/stignore.test.mjs`, the `GIT_ONLY` list).
 
 ## Syncing with base after a fork (skills-lock.json v2)
 

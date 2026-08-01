@@ -1,0 +1,109 @@
+// Общие правила игнора Syncthing для Obsidian-вольта.
+// Этот файл СИНХРОНИЗИРУЕТСЯ: правь его на любой машине — правила разъедутся сами.
+// Подключается строкой `#include .stignore-common` из .stignore, который лежит рядом.
+// Сам .stignore Syncthing не синхронизирует никогда — ради этого правила и вынесены
+// в отдельный файл, иначе их пришлось бы поддерживать на каждом устройстве руками.
+//
+// Две раскладки, под которые он написан:
+//   1) вольт = папка Syncthing — .stignore и .stignore-common лежат в корне вольта;
+//   2) папка Syncthing — родитель нескольких вольтов: в её корневом .stignore пиши
+//      #include <вольт>/.stignore-common (путь у #include — от корня папки).
+// Во второй раскладке правила применяются от корня родителя, поэтому многосегментные
+// пути даны парами: короткий и с `**/`. `**` матчит и разделители, но слэш после него
+// обязателен — `**/.obsidian/app.json` не поймает `.obsidian/app.json` в корне.
+// Дубль намеренный, не чисти его.
+//
+// Синтаксис: первое совпадение выигрывает — свои `!`-исключения ставь ВЫШЕ правила,
+// которое они отменяют. `(?d)` — «можно удалить»: Syncthing вправе снести такой файл,
+// если тот мешает удалить каталог. `//` — комментарий.
+
+// ---- VCS ----
+(?d).git
+(?d)**/.git
+(?d).jj
+(?d)**/.jj
+
+// ---- Obsidian: состояние конкретного устройства ----
+// Открытые вкладки и раскладка панелей. Главный источник конфликтов: их пишет
+// каждое устройство, а смысла в чужой раскладке нет.
+(?d)workspace.json
+(?d)workspace-mobile.json
+(?d).obsidian/workspace*.json
+(?d)**/.obsidian/workspace*.json
+
+// ---- Obsidian: настройки плагинов, которыми владеет вольт ----
+// Исключения обязаны идти ВЫШЕ общего правила на data.json.
+// file-explorer-plus: что прячем из дерева файлов. obsidian-icon-folder: иконки лестницы.
+// У обоих настройка одинакова на всех машинах — её и нужно распространять.
+!.obsidian/plugins/file-explorer-plus/data.json
+!**/.obsidian/plugins/file-explorer-plus/data.json
+!.obsidian/plugins/obsidian-icon-folder/data.json
+!**/.obsidian/plugins/obsidian-icon-folder/data.json
+
+// ---- Obsidian: runtime-состояние плагинов (настройки, индексы, кэши) ----
+// Код плагинов синхронизируется — не переустанавливать же их на каждой машине.
+// Если настройки ещё какого-то плагина нужно синкать, добавь `!`-строку выше этого блока.
+(?d).obsidian/plugins/*/data.json
+(?d)**/.obsidian/plugins/*/data.json
+(?d).obsidian/plugins/*/*.db
+(?d)**/.obsidian/plugins/*/*.db
+(?d).obsidian/plugins/*/cache
+(?d)**/.obsidian/plugins/*/cache
+(?d).obsidian/cache
+(?d)**/.obsidian/cache
+(?d).obsidian/*.json.bak
+(?d)**/.obsidian/*.json.bak
+
+// ---- Obsidian: конфиги, которые по природе разные на устройствах ----
+// app.json: мобильный Obsidian пишет туда mobileToolbarCommands, десктопный их
+// выкидывает — телефон и десктоп конфликтуют по нему всегда. В git он при этом
+// лежит: клон раздаёт дефолт (attachmentFolderPath и прочее) один раз, а дальше
+// каждое устройство ведёт свой. Единственный файл, где git и синк расходятся
+// намеренно — список зафиксирован в tests/stignore.test.mjs (GIT_ONLY).
+(?d).obsidian/app.json
+(?d)**/.obsidian/app.json
+(?d).obsidian/graph.json
+(?d)**/.obsidian/graph.json
+(?d).obsidian/core-plugins-migration.json
+(?d)**/.obsidian/core-plugins-migration.json
+
+// Синхронизируются намеренно (НЕ игнорировать): community-plugins.json, core-plugins.json,
+// appearance.json, hotkeys.json, templates.json, types.json, snippets/ — их и нужно
+// распространять по машинам. Условие, без которого они конфликтуют: Obsidian открыт
+// только на одной машине за раз, и эти json не правятся на диске при запущенном
+// Obsidian — он перезапишет их своим состоянием.
+
+// ---- Obsidian: корзина ----
+(?d).trash
+(?d)**/.trash
+
+// ---- Мусор от прошлых конфликтов внутри служебных папок ----
+(?d).obsidian/**/*.sync-conflict-*
+(?d)**/.obsidian/**/*.sync-conflict-*
+// Конфликты в самих заметках НЕ игнорируем — их нужно видеть и разбирать руками.
+
+// ---- Генерируемое ----
+// Счётчик задач: пересобирается из tasks.md на каждой машине (.claude/gen-tasks-json.cjs).
+(?d)files/tasks.json
+(?d)**/files/tasks.json
+
+// ---- Агенты и тулинг ----
+// settings.local.json — локальные разрешения агента, у каждой машины свои.
+(?d).claude/settings.local.json
+(?d)**/.claude/settings.local.json
+(?d)node_modules
+(?d)**/node_modules
+(?d).venv
+(?d)**/.venv
+(?d)__pycache__
+(?d)**/__pycache__
+
+// ---- Мусор ОС ----
+(?d).DS_Store
+(?d)**/.DS_Store
+(?d)Thumbs.db
+(?d)**/Thumbs.db
+(?d)desktop.ini
+(?d)**/desktop.ini
+(?d)~$*
+(?d)**/~$*
