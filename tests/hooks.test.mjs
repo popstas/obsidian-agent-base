@@ -17,9 +17,9 @@ test('tasks-startup печатает вложенный путь лога', () =
 
 test('settings.json регистрирует vault как локальный marketplace', () => {
   const s = JSON.parse(readFileSync(join(REPO, '.claude', 'settings.json'), 'utf8'));
-  assert.deepEqual(s.extraKnownMarketplaces['obsidian-agent-base'].source,
+  assert.deepEqual(s.extraKnownMarketplaces['obsidian-agent-workspace'].source,
     { source: 'directory', path: '.' });
-  assert.equal(s.enabledPlugins['obsidian-agent-base@obsidian-agent-base'], true);
+  assert.equal(s.enabledPlugins['obsidian-agent-workspace@obsidian-agent-workspace'], true);
 });
 
 test('в хуках нет юниксовых зависимостей', () => {

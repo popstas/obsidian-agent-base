@@ -1,7 +1,7 @@
 {
   "$comment": "Плагины vault. enabled — попадает в .obsidian/community-plugins.json; vendored — лежит в репозитории, скриптом не качается. Заметки по конкретным плагинам держим здесь, а не в их объектах: строку с плагином построчный парсер bash-установщика прогоняет через sed, и небезопасно класть на неё что-либо, кроме ASCII-полей. dataview: не поднимай minVersion до тега 0.5.70 — manifest.json внутри того же релиза несёт version 0.5.68, а установщик сверяет именно его; более высокий minVersion недостижим и уйдёт в вечную перекачку.",
   "plugins": [
-    { "id": "tasks-mover", "repo": "popstas/obsidian-agent-base", "minVersion": "1.0.0", "enabled": true, "vendored": true },
+    { "id": "tasks-mover", "repo": "popstas/obsidian-agent-workspace", "minVersion": "1.0.0", "enabled": true, "vendored": true },
     { "id": "dataview", "repo": "blacksmithgu/obsidian-dataview", "minVersion": "0.5.68", "enabled": true },
     { "id": "obsidian-tasks-plugin", "repo": "obsidian-tasks-group/obsidian-tasks", "minVersion": "8.3.0", "enabled": true },
     { "id": "obsidian-outliner", "repo": "vslinko/obsidian-outliner", "minVersion": "4.10.2", "enabled": true },

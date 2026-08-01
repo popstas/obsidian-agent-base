@@ -1,14 +1,14 @@
 {
-  "name": "obsidian-agent-base",
+  "name": "obsidian-agent-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "Depersonalized Obsidian vault core: skills, settings and task ladder for any coding agent",
+  "description": "Agent Workspace: a personal workspace where an AI agent keeps your tasks, projects, notes and work log",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/popstas/obsidian-agent-base.git"
+    "url": "git+https://github.com/popstas/obsidian-agent-workspace.git"
   },
-  "homepage": "https://github.com/popstas/obsidian-agent-base#readme",
+  "homepage": "https://github.com/popstas/obsidian-agent-workspace#readme",
   "license": "MIT",
   "engines": {
     "node": ">=18"

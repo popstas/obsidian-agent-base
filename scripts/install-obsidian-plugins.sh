@@ -81,7 +81,7 @@ DL="${OAB_GITHUB_DOWNLOAD:-https://github.com}"
 # Invoke-WebRequest на Windows PowerShell 5.1 — нет, поэтому разделение
 # сделано явно в обеих реализациях, а не оставлено на поведение клиента.
 curl_args() {
-  CURL_ARGS=(-sSL -H "user-agent: obsidian-agent-base")
+  CURL_ARGS=(-sSL -H "user-agent: obsidian-agent-workspace")
   CURL_API_ARGS=("${CURL_ARGS[@]}" -H "accept: application/vnd.github+json")
   if [ -n "${GITHUB_TOKEN:-}" ]; then
     CURL_API_ARGS+=(-H "authorization: Bearer $GITHUB_TOKEN")

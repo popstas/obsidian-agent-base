@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// sync-base.cjs — синхронизация скиллов наследника с базовым шаблоном obsidian-agent-base.
+// sync-base.cjs — синхронизация скиллов наследника с базовым шаблоном obsidian-agent-workspace.
 //
 // Детерминированный помощник: считает хэши скиллов, классифицирует состояние каждого
 // общего скилла (3-way по merge-base из skills-lock.json) и показывает diff.
@@ -258,7 +258,7 @@ function cmdBootstrap() {
   const lock = readLock();
   let baseRoot = basePath(lock);
   // если baseSync ещё нет — попробуем дефолтный относительный путь к base рядом
-  const defaultRel = "../../obsidian-agent-base";
+  const defaultRel = "../../obsidian-agent-workspace";
   if (!baseRoot) baseRoot = join(ROOT, defaultRel);
   if (!existsSync(baseRoot)) {
     fail(`Не найден base. Создай skills-lock.json с baseSync.base.path или положи base в ${defaultRel}`);
@@ -273,7 +273,7 @@ function cmdBootstrap() {
   if (!lock.skills) lock.skills = {};
   lock.baseSync = lock.baseSync || {};
   lock.baseSync.base = {
-    repo: "popstas/obsidian-agent-base",
+    repo: "popstas/obsidian-agent-workspace",
     path: (lock.baseSync.base && lock.baseSync.base.path) || defaultRel,
     lastSyncCommit: commit,
     lastSyncAt: now,
