@@ -8,6 +8,8 @@ Agent Workspace is the main workspace an AI agent looks at to see your tasks, pr
 
 You talk to the agent in plain language. There are no commands to memorize, no file names to learn, no internals to understand: just ask it to show your tasks, add a new one, start working, record what happened, or put together a report.
 
+Memorizing the commands is optional, but it pays off: `/n` + Tab is faster to type than "Add a task". Every section below names the command that does the same thing — use whichever form is quicker in the moment.
+
 ## How to use it
 
 ### Start your day
@@ -25,6 +27,8 @@ Help me pick what to work on today.
 ```
 
 The agent reviews your active tasks, your current projects, and today's log, points out anything old or stalled, and helps you commit to a realistic amount of work.
+
+Command: `/list-tasks`
 
 ### Add a task
 
@@ -50,6 +54,8 @@ Put it in future tasks.
 Snooze it until September.
 ```
 
+Commands: `/new-task`, or `/snoozed-task` for one that waits until a given date
+
 ### Work on a task
 
 The agent doesn't just keep the list — you can hand it the work itself:
@@ -67,6 +73,8 @@ Draft the deliverable for this task using the related projects.
 ```
 
 The agent gathers whatever context it can find, proposes a plan, and separates what it can finish by itself from the steps that need a human.
+
+Commands: `/first-task-do` to pick up the first task on the list, `/decompose` to break one down into steps
 
 ### Record progress
 
@@ -87,6 +95,8 @@ Worth putting in the daily log:
 
 The log is not a mandatory detailed diary. Capturing the facts you'll need to resume the task or write a report is enough.
 
+Command: `/worklog`
+
 ### Close a task
 
 When the work is finished, say:
@@ -97,6 +107,8 @@ Close the task: draft the client proposal.
 
 The agent marks it done, stamps the completion date, checks the related project, and records the outcome in the daily log.
 
+Command: `/close-task`
+
 ## Working rhythm
 
 ### Every day
@@ -106,6 +118,8 @@ The agent marks it done, stamps the completion date, checks the related project,
 3. Work down the list from the top.
 4. Write meaningful progress into the daily log.
 5. Close finished tasks with a short summary.
+
+As commands: `/list-tasks` → `/first-task-do` → `/worklog` → `/close-task`
 
 ### Every week
 
@@ -127,6 +141,8 @@ The weekly review looks **forward**: it builds a realistic plan, checks your act
 
 The weekly review always walks through `tasks-future.md`. Go over that list **at least once a week** so live tasks don't get forgotten in the backlog.
 
+Commands: `/weekly-report`, then `/weekly-review`. Separately, check the snoozed tasks whose date has come up: `/snoozed-review`
+
 ### Every month
 
 In the first week of a new month, ask for:
@@ -146,6 +162,8 @@ The monthly review:
 * produces the monthly report.
 
 Go through `ideas.md` **at least once a month**. An idea can grow into a future task, stay a note, or be deleted once it no longer has any value.
+
+Command: `/monthly-review`
 
 ## What the workspace looks like
 
@@ -223,6 +241,8 @@ This is not a parking lot for low-priority work — it's for tasks that are too 
 * discuss again next quarter.
 
 When the activation date arrives, the agent offers to return the task to the active list, or to delete it if it no longer matters.
+
+Commands: `/snoozed-task` to snooze a task, `/snoozed-review` to go through the ones whose date has arrived
 
 ### `tasks-recurring.md` — recurring chores
 
@@ -354,18 +374,18 @@ If the outcome needs several independent actions, it's a project. Its plan moves
 
 A skill is a set of instructions that tells the agent how to carry out a repeated workflow in this workspace.
 
-Separate skills help the agent, for example:
+Every skill is a slash command named after itself:
 
-* add and close tasks;
-* keep the daily log;
-* break large tasks down;
-* choose the day's work;
-* run the weekly review;
-* write weekly and monthly reports;
-* check snoozed tasks;
-* organize notes.
+* `/new-task` to add a task, `/close-task` to close one;
+* `/worklog` to record progress in the daily log;
+* `/list-tasks` to sort out the day's work;
+* `/first-task-do` to start the first task on the list;
+* `/decompose` to break a large task into steps;
+* `/snoozed-task` and `/snoozed-review` to snooze a task and to go through the ones that came due;
+* `/weekly-report` and `/weekly-review` for the weekly report and the weekly review;
+* `/monthly-review` for the monthly review.
 
-You don't have to know skill names or launch them with special commands. An ordinary request is usually enough:
+You don't have to know these names. An ordinary request is enough, and the agent picks the right instructions on its own:
 
 ```text
 Add a task.
@@ -373,7 +393,7 @@ Log my progress.
 Run the weekly review.
 ```
 
-The agent picks the right instructions on its own.
+But when you do remember the name, the slash command is faster: `/n` + Tab completes it, and the task text can follow right after — `/new-task draft the client proposal`.
 
 Skills can be adapted to how a particular person or company works: folder names, project types, the services you use, and your reporting format.
 
@@ -399,11 +419,11 @@ If you're reading this README inside Obsidian, an agent is most likely already s
 
 Once setup is done:
 
-1. Ask: `What's on my plate?`
-2. Add one real task from your actual work.
-3. Have the agent start working on it.
-4. Capture the first result in the daily log.
-5. At the end of the week, put together the report and run the weekly review.
+1. Ask: `What's on my plate?` (`/list-tasks`)
+2. Add one real task from your actual work (`/new-task`).
+3. Have the agent start working on it (`/first-task-do`).
+4. Capture the first result in the daily log (`/worklog`).
+5. At the end of the week, put together the report and run the weekly review (`/weekly-report`, `/weekly-review`).
 
 There's no need to migrate everything at once. Start with one real task and add context as you go.
 

@@ -21,11 +21,11 @@
   "setupDocs": [
     {
       "path": "README.md",
-      "sha256": "971c76e0af252d5a09c9bbefe22fe86d371d2d550643f5fa3c1de0c4f68da771"
+      "sha256": "153c71ceae10a1a10cf4f570eea9f195408572b0531ab3c67f09a18ce06fafa4"
     },
     {
       "path": "README_ru.md",
-      "sha256": "e0292120d0c9a855a0e78bc8f961463ef6656f9fb811ff87f453df7693973406"
+      "sha256": "77434f17bdd82dcb086fcfe8850b3df9707cea94e41e21509b646d6c58a6e086"
     },
     {
       "path": "INTEGRATION.md",
