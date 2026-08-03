@@ -30,7 +30,7 @@ const SKILL_WIKILINK = /\[\[[^\]]*(?:skills\/|\/SKILL)/;
 // зашиваются — они читаются из необязательного gitignored файла
 // .privacy-terms (см. .privacy-terms.example), чтобы сам guard не был
 // местом утечки.
-const HOME_PATH = /\/home\/[^\s/'"]+\/|\/Users\/[^\s/'"]+\/|C:\\Users\\[^\s\\]+\\/;
+const HOME_PATH = /\/home\/[^\s/'"]+|\/Users\/[^\s/'"]+|C:\\Users\\[^\s\\]+/;
 const EMAIL = /[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+/;
 
 // CHANGELOG.md обязан упоминать плоский формат в пометке BREAKING — это
