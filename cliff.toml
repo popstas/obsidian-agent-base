@@ -38,6 +38,20 @@ trim = true
 [git]
 conventional_commits = true
 filter_unconventional = true
+commit_preprocessors = [
+  # Тема коммита d1829f6 ("docs: replace Planfix example with generic
+  # CRM") называет приватный термин из локального (gitignored,
+  # cliff.toml его не видит) списка .privacy-terms напрямую. Это законный
+  # docs-коммит — запись в чейнджлоге осмысленна, проблема только в
+  # слове внутри неё, поэтому skip (как для ba2850e) здесь не годится:
+  # он выбросил бы всю запись. commit_preprocessors правят текст самого
+  # сообщения до группировки — без этого правила регенерация вернёт
+  # Planfix в публичный CHANGELOG.md. Замена согласована с уже
+  # переформулированной вручную строкой в CHANGELOG.md ("vendor-specific
+  # tracker"), чтобы текст не расходился между ручной и генерируемой
+  # версией.
+  { pattern = "Planfix", replace = "vendor-specific tracker" },
+]
 commit_parsers = [
   # Тема этого коммита называет приватный термин из .privacy-terms
   # (Planfix) напрямую — сам коммит служебный (правка одной строки
