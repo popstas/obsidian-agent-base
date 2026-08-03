@@ -55,7 +55,7 @@
 
 - Add INTEGRATION.md guiding per-user skill adaptation
 - Add English integration prompt; rename add-task skill to new-task
-- Replace Planfix example with generic CRM
+- Replace vendor-specific tracker example with generic CRM
 - Add # Week / # Week+ task sections to skills
 - Preserve author and quote on tasks
 - Deidentify from Claude Code to any agent
