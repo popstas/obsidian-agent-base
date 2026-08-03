@@ -4,7 +4,7 @@
 
 ## Что это
 
-Личный vault на базе [obsidian-agent-workspace](https://github.com/popstas/obsidian-agent-workspace): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Node в этом vault держат две вещи: хуки Claude Code (счётчик задач, подсказка на старте сессии) и скрипт `base-sync` (`.claude/sync-base.cjs`) — см. «Автоматизация» ниже. Установка и обновление плагинов Node не требуют ни на macOS/Linux, ни на Windows.
+Личный vault на базе [obsidian-agent-workspace](https://github.com/popstas/obsidian-agent-workspace): задачи, дневник, заметки и отчёты в markdown. Это не софт, который собирают и деплоят — сборки и линтера здесь нет. Node в этом vault держат хуки Claude Code (счётчик задач, подсказка на старте сессии) — см. «Автоматизация» ниже. Установка и обновление плагинов Node не требуют ни на macOS/Linux, ни на Windows.
 
 **Конвенции живут в скилле `obsidian-vault`** (`skills/obsidian-vault/SKILL.md`): таксономия каталогов, куда попадает какой тип заметки, правила wikilinks, работа с чувствительным содержимым, настройки Obsidian. Читай его перед созданием, переносом и переименованием заметок и не дублируй его правила здесь.
 
@@ -19,7 +19,7 @@
 - Ежедневно: `new-task`, `close-task`, `worklog`, `first-task-do`, `list-tasks`, `decompose`
 - Отложенное: `snoozed-task`, `snoozed-review`
 - Ревью: `weekly-review` / `weekly-report`, `monthly-review`
-- Vault: `obsidian-vault`, `base-sync`, `learn`
+- Vault: `obsidian-vault`, `learn`
 - Разово: `demo-content-delete` — убирает демо-контент после адаптации vault, в конце удаляет сам себя. Не вызывай его повторно и не жди, что он останется в списке скиллов.
 
 Если запрос отображается на скилл — вызывай скилл, а не правь файлы напрямую.
@@ -29,7 +29,6 @@
 - `.claude/gen-tasks-json.cjs` — пересобирает `files/tasks.json` (счётчики задач) из `tasks.md`. Запускается на старте сессии и хуком `PostToolUse` (`.claude/hooks/tasks-changed.mjs`) после правок `tasks.md`. `files/tasks.json` в `.gitignore`; считаются только чекбоксы нулевого отступа.
 - `.claude/hooks/tasks-startup.mjs` — `SessionStart`: подсказка заглянуть в `tasks.md` и лог текущего дня.
 - `scripts/install-obsidian-plugins.sh` / `.ps1` — доставка Obsidian-плагинов по `obsidian-plugins.json`. Две равноправные реализации: bash 3.2 + curl для macOS/Linux, PowerShell 5.1 для Windows. Node, Python и `jq` не нужны ни одной из них.
-- `.claude/sync-base.cjs` — сверка скиллов с base, вызывается скиллом `base-sync`. Вторая (после хуков) вещь на клиенте, которой нужен Node; путь не повседневный.
 
 ## Конвенции, на которых легко спотыкнуться
 
