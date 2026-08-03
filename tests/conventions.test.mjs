@@ -37,15 +37,23 @@ const EMAIL = /[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+/;
 // описание истории, а не действующая конвенция.
 const FLAT_LOG_EXEMPT = new Set(['CHANGELOG.md']);
 
-// cliff.toml сам называет один из терминов .privacy-terms — но осознанно:
-// commit_preprocessors/commit_parsers используют его как pattern/якорь sha,
-// чтобы вычистить это слово из генерируемого CHANGELOG.md (см. комментарии
-// на месте, коммиты ba2850e/cb0713e/d77ecda). Расширение охвата privacy-теста
-// на cliff.toml — это находка ревью; сам механизм скрабирования — решение
-// пользователя, менять не нужно. Точечное исключение файла, не ослабление
-// регэкспа/списка терминов. (Не пиши сюда сам термин буквально — иначе этот
-// комментарий сам станет находкой при следующем расширении охвата.)
-const PRIVACY_TERMS_EXEMPT = new Set(['cliff.toml']);
+// cliff.toml сам называет один термин из .privacy-terms в пяти конкретных
+// строках — но осознанно: commit_preprocessors/commit_parsers используют его
+// как pattern/якорь sha, чтобы вычистить это слово из генерируемого
+// CHANGELOG.md (см. комментарии на месте, коммиты ba2850e/cb0713e/d77ecda).
+//
+// Исключение — по номерам строк, а не по файлу целиком: файловое исключение
+// спрятало бы от guard любой другой приватный термин, который однажды
+// случайно попадёт в cliff.toml (например, домашний путь в постороннем
+// комментарии) — ровно тот класс тихого пропуска, который guard обязан
+// ловить. Исключение по термину («этому файлу разрешён именно этот термин»)
+// тоже не годится здесь: этот тест-файл сам публичный и сам попадает под
+// privacyScanFiles() (она включает tests/) — написать здесь сам термин
+// буквально означало бы закоммитить в публичный репозиторий ровно то, что
+// .privacy-terms обязан скрывать. Поэтому — точные номера строк, снятые
+// однократно `grep`-ом по факту (см. final-fix-report.md): любая другая
+// строка cliff.toml, включая новые, проверяется как обычно.
+const PRIVACY_TERMS_LINE_EXEMPT = { 'cliff.toml': new Set([42, 49, 53, 57, 59]) };
 
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -95,6 +103,22 @@ function scanFiles(files, re, exempt = new Set()) {
     const rel = relative(REPO, path);
     if (exempt.has(rel)) continue;
     readFileSync(path, 'utf8').split(/\r?\n/).forEach((line, i) => {
+      if (re.test(line)) hits.push(`${rel}:${i + 1}`);
+    });
+  }
+  return hits;
+}
+
+// Как scanFiles, но исключение — конкретные номера строк конкретного файла
+// (см. PRIVACY_TERMS_LINE_EXEMPT выше), а не файл целиком. Каждая остальная
+// строка того же файла проверяется как обычно.
+function scanFilesLineExempt(files, re, lineExempt = {}) {
+  const hits = [];
+  for (const path of files) {
+    const rel = relative(REPO, path);
+    const exemptLines = lineExempt[rel];
+    readFileSync(path, 'utf8').split(/\r?\n/).forEach((line, i) => {
+      if (exemptLines && exemptLines.has(i + 1)) return;
       if (re.test(line)) hits.push(`${rel}:${i + 1}`);
     });
   }
@@ -168,7 +192,7 @@ test('нет проектно-специфичных приватных терм
     return;
   }
   const re = new RegExp(terms.map(escapeRegExp).join('|'), 'i');
-  assert.deepEqual(scanFiles(privacyScanFiles(), re, PRIVACY_TERMS_EXEMPT), []);
+  assert.deepEqual(scanFilesLineExempt(privacyScanFiles(), re, PRIVACY_TERMS_LINE_EXEMPT), []);
 });
 
 // Считаем по индексу git, а не по рабочему дереву: значение имеет только то,
