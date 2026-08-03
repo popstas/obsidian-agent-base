@@ -8,7 +8,7 @@
 
 > **BREAKING.** Удалён скилл `base-sync` и скрипт `.claude/sync-base.cjs` — синхронизация с базой больше не поддерживается. Обновляйте скиллы, как вам удобно: `git pull` в клоне репозитория, копирование или симлинки.
 
-> **BREAKING.** `.claude/vault-paths.md` переименован в `.claude/vault-config.md` и расширен ключами `dashboard`, `tasks_legend`, `work_email`. Старое имя пока читается как запасное, но будет убрано.
+> **BREAKING.** `.claude/vault-paths.md` переименован в `.claude/vault-config.md` и расширен ключами `report_day`, `dashboard`, `tasks_legend`, `work_email`. Старое имя пока читается как запасное, но будет убрано.
 
 ## 0.1.0
 
