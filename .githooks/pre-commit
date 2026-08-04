@@ -1,9 +1,13 @@
 #!/bin/sh
-# Держит skills/Skills list.md в актуальном виде. Включается один раз:
+# Держит skills/Skills list.md в актуальном виде и не пускает коммит с
+# красным тестом (включая guard приватности). Включается один раз:
 #   git config core.hooksPath .githooks
-# Хуки не переживают clone, поэтому основная гарантия — проверка в CI.
+# Это локальная настройка машины — она не приезжает через clone, поэтому
+# основная гарантия всё равно CI: она регенерирует список и гоняет тесты
+# сама, падая, если что-то разошлось.
 set -e
 if git diff --cached --name-only | grep -q '^skills/.*/SKILL\.md$'; then
   node scripts/gen-skills-list.mjs
   git add "skills/Skills list.md"
 fi
+npm test

@@ -4,6 +4,12 @@
 >
 > Репозиторий до-единичный: breaking changes едут минорным бампом, с пометкой BREAKING под версией, где они случились.
 
+## Unreleased
+
+> **BREAKING.** Удалён скилл `base-sync` и скрипт `.claude/sync-base.cjs` — синхронизация с базой больше не поддерживается. Обновляйте скиллы, как вам удобно: `git pull` в клоне репозитория, копирование или симлинки.
+
+> **BREAKING.** `.claude/vault-paths.md` переименован в `.claude/vault-config.md` и расширен ключами `report_day`, `dashboard`, `tasks_legend`, `work_email`. Старое имя пока читается как запасное, но будет убрано.
+
 ## 0.1.0
 
 
@@ -48,7 +54,7 @@
 
 - Add INTEGRATION.md guiding per-user skill adaptation
 - Add English integration prompt; rename add-task skill to new-task
-- Replace Planfix example with generic CRM
+- Replace vendor-specific tracker example with generic CRM
 - Add # Week / # Week+ task sections to skills
 - Preserve author and quote on tasks
 - Deidentify from Claude Code to any agent

@@ -29,11 +29,11 @@
     },
     {
       "path": "INTEGRATION.md",
-      "sha256": "83475b4ea8e0a0756e308b23171901d2cd42609a46d86090fde1ff1d07dcb027"
+      "sha256": "7feeb0c8ca84db96f12358e33155a05ff4dfab300e1354f80cf3b4e9307d4f29"
     },
     {
       "path": "CONTRIBUTING.md",
-      "sha256": "17f614c4aa22e337b13fe318ce55b47bd3c55e9fd4e89941916e8d40cef67973"
+      "sha256": "faa1d4a42fff1841f0992a618184b1f4993ebb8045532d4c945ece3b042f50a1"
     }
   ],
   "baseOnly": [

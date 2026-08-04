@@ -38,7 +38,31 @@ trim = true
 [git]
 conventional_commits = true
 filter_unconventional = true
+commit_preprocessors = [
+  # Тема коммита d1829f6 ("docs: replace Planfix example with generic
+  # CRM") называет приватный термин из локального (gitignored,
+  # cliff.toml его не видит) списка .privacy-terms напрямую. Это законный
+  # docs-коммит — запись в чейнджлоге осмысленна, проблема только в
+  # слове внутри неё, поэтому skip (как для ba2850e) здесь не годится:
+  # он выбросил бы всю запись. commit_preprocessors правят текст самого
+  # сообщения до группировки — без этого правила регенерация вернёт
+  # Planfix в публичный CHANGELOG.md. Замена согласована с уже
+  # переформулированной вручную строкой в CHANGELOG.md ("vendor-specific
+  # tracker"), чтобы текст не расходился между ручной и генерируемой
+  # версией.
+  { pattern = "Planfix", replace = "vendor-specific tracker" },
+]
 commit_parsers = [
+  # Тема этого коммита называет приватный термин из .privacy-terms
+  # (Planfix) напрямую — сам коммит служебный (правка одной строки
+  # CHANGELOG.md), поэтому в генерируемом чейнджлоге ему не место в любом
+  # случае. Привязка по sha, а не по подстроке "Planfix" или по всему
+  # "^fix" — иначе legit-коммит на ту же тему когда-нибудь молча
+  # потеряется. Правило должно идти раньше правил по message ниже: у
+  # git-cliff первое совпадение в списке решает судьбу коммита, а тема
+  # начинается с "fix:" и иначе попала бы в Bug Fixes раньше, чем очередь
+  # дойдёт сюда.
+  { sha = "ba2850e955881d1c8da752ace4ca6f717b273f63", skip = true },
   { message = "^feat", group = "Features" },
   { message = "^fix", group = "Bug Fixes" },
   { message = "^docs", group = "Documentation" },

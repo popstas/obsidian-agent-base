@@ -30,12 +30,30 @@ const SKILL_WIKILINK = /\[\[[^\]]*(?:skills\/|\/SKILL)/;
 // зашиваются — они читаются из необязательного gitignored файла
 // .privacy-terms (см. .privacy-terms.example), чтобы сам guard не был
 // местом утечки.
-const HOME_PATH = /\/home\/[^\s/'"]+\/|\/Users\/[^\s/'"]+\/|C:\\Users\\[^\s\\]+\\/;
+const HOME_PATH = /\/home\/[^\s/'"]+|\/Users\/[^\s/'"]+|C:\\Users\\[^\s\\]+/;
 const EMAIL = /[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+/;
 
 // CHANGELOG.md обязан упоминать плоский формат в пометке BREAKING — это
 // описание истории, а не действующая конвенция.
 const FLAT_LOG_EXEMPT = new Set(['CHANGELOG.md']);
+
+// cliff.toml сам называет один термин из .privacy-terms в пяти конкретных
+// строках — но осознанно: commit_preprocessors/commit_parsers используют его
+// как pattern/якорь sha, чтобы вычистить это слово из генерируемого
+// CHANGELOG.md (см. комментарии на месте, коммиты ba2850e/cb0713e/d77ecda).
+//
+// Исключение — по номерам строк, а не по файлу целиком: файловое исключение
+// спрятало бы от guard любой другой приватный термин, который однажды
+// случайно попадёт в cliff.toml (например, домашний путь в постороннем
+// комментарии) — ровно тот класс тихого пропуска, который guard обязан
+// ловить. Исключение по термину («этому файлу разрешён именно этот термин»)
+// тоже не годится здесь: этот тест-файл сам публичный и сам попадает под
+// privacyScanFiles() (она включает tests/) — написать здесь сам термин
+// буквально означало бы закоммитить в публичный репозиторий ровно то, что
+// .privacy-terms обязан скрывать. Поэтому — точные номера строк, снятые
+// однократно `grep`-ом по факту (см. final-fix-report.md): любая другая
+// строка cliff.toml, включая новые, проверяется как обычно.
+const PRIVACY_TERMS_LINE_EXEMPT = { 'cliff.toml': new Set([42, 49, 53, 57, 59]) };
 
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -59,6 +77,52 @@ function markdownFiles() {
     ...walk(join(REPO, 'skills')).filter((p) => p.endsWith('.md')),
     ...rootDocs(),
   ];
+}
+
+// Тот же приватный контент может попасть и мимо skills/ + корня: в образец
+// .claude/vault-config.md (его новые пользователи читают и копируют), в
+// скрипты/тесты (пример пути или адреса в комментарии) или в cliff.toml.
+// Личные маркеры (домашние пути, email) и .privacy-terms проверяем по этому
+// более широкому охвату; остальные конвенции (плоский лог, вайклинк на
+// скилл и т.п.) — только про сами скиллы, им расширение не нужно.
+function privacyScanFiles() {
+  const exts = new Set(['.md', '.mjs', '.cjs', '.js', '.sh', '.ps1']);
+  return [
+    ...markdownFiles(),
+    ...walk(join(REPO, '.claude')).filter((p) => p.endsWith('.md')),
+    ...walk(join(REPO, 'scripts')).filter((p) => exts.has(p.slice(p.lastIndexOf('.')))),
+    ...walk(join(REPO, 'tests')).filter((p) => exts.has(p.slice(p.lastIndexOf('.')))),
+    ...walk(join(REPO, '.obsidian')).filter((p) => p.endsWith('.md')),
+    join(REPO, 'cliff.toml'),
+  ].filter((p) => existsSync(p));
+}
+
+function scanFiles(files, re, exempt = new Set()) {
+  const hits = [];
+  for (const path of files) {
+    const rel = relative(REPO, path);
+    if (exempt.has(rel)) continue;
+    readFileSync(path, 'utf8').split(/\r?\n/).forEach((line, i) => {
+      if (re.test(line)) hits.push(`${rel}:${i + 1}`);
+    });
+  }
+  return hits;
+}
+
+// Как scanFiles, но исключение — конкретные номера строк конкретного файла
+// (см. PRIVACY_TERMS_LINE_EXEMPT выше), а не файл целиком. Каждая остальная
+// строка того же файла проверяется как обычно.
+function scanFilesLineExempt(files, re, lineExempt = {}) {
+  const hits = [];
+  for (const path of files) {
+    const rel = relative(REPO, path);
+    const exemptLines = lineExempt[rel];
+    readFileSync(path, 'utf8').split(/\r?\n/).forEach((line, i) => {
+      if (exemptLines && exemptLines.has(i + 1)) return;
+      if (re.test(line)) hits.push(`${rel}:${i + 1}`);
+    });
+  }
+  return hits;
 }
 
 function scan(re, exempt = new Set()) {
@@ -112,16 +176,23 @@ test('порог "старых" задач одинаков в list-tasks и wee
   );
 });
 
-test('нет личных маркеров (домашних путей, email) в скиллах и корневых документах', () => {
-  const hits = [...scan(HOME_PATH), ...scan(EMAIL)];
+test('нет личных маркеров (домашних путей, email) в скиллах, .claude/, scripts/, tests/, cliff.toml и корневых документах', () => {
+  const files = privacyScanFiles();
+  const hits = [...scanFiles(files, HOME_PATH), ...scanFiles(files, EMAIL)];
   assert.deepEqual([...new Set(hits)].sort(), []);
 });
 
-test('нет проектно-специфичных приватных терминов из .privacy-terms (если файл есть локально)', () => {
+test('нет проектно-специфичных приватных терминов из .privacy-terms (если файл есть локально)', (t) => {
   const terms = loadPrivacyTerms();
-  if (terms.length === 0) return; // нет локального файла — нечего проверять
+  if (terms.length === 0) {
+    // .privacy-terms — сам приватный (не коммитится, см. .gitignore), поэтому
+    // в клоне и на CI его нет. Тест не может проверить термины, которых не
+    // знает, но обязан сказать об этом явно, а не тихо выйти зелёным.
+    t.skip('.privacy-terms не найден локально (это штатно вне машины автора) — термины не проверены');
+    return;
+  }
   const re = new RegExp(terms.map(escapeRegExp).join('|'), 'i');
-  assert.deepEqual(scan(re), []);
+  assert.deepEqual(scanFilesLineExempt(privacyScanFiles(), re, PRIVACY_TERMS_LINE_EXEMPT), []);
 });
 
 // Считаем по индексу git, а не по рабочему дереву: значение имеет только то,
