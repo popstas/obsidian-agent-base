@@ -4,11 +4,49 @@
 >
 > Репозиторий до-единичный: breaking changes едут минорным бампом, с пометкой BREAKING под версией, где они случились.
 
-## Unreleased
+## 0.2.0
 
-> **BREAKING.** Удалён скилл `base-sync` и скрипт `.claude/sync-base.cjs` — синхронизация с базой больше не поддерживается. Обновляйте скиллы, как вам удобно: `git pull` в клоне репозитория, копирование или симлинки.
 
-> **BREAKING.** `.claude/vault-paths.md` переименован в `.claude/vault-config.md` и расширен ключами `report_day`, `dashboard`, `tasks_legend`, `work_email`. Старое имя пока читается как запасное, но будет убрано.
+> **BREAKING.** vault-paths.md → vault-config.md, ключи dashboard/tasks_legend/work_email
+
+> **BREAKING.** weekly-report на report_day, направления и обязательное weekly-review
+
+> **BREAKING.** new-task — директивы, проектные задачи, вставка в начало по умолчанию
+
+> **BREAKING.** удалить base-sync без замены
+
+
+### Bug Fixes
+
+- Obsidian-vault Sensitivity — общее правило про агентов/shell
+- Guard ловит голый домашний путь; убрать конкретику машины из obsidian-vault
+- Weekly-review ссылается на ключ tasks_legend, а не на литерал легенды
+- Obsidian-vault ссылается на ключ tasks_legend, а не на литерал легенды
+- Close-task возвращает явные откаты для отсутствующего projects.md и обратной ссылки
+- Формат Unreleased-записи по шаблону cliff.toml
+- Устраняет находки финального ревью миграции симлинков
+- Точечное построчное исключение guard и правка онбординга report_day
+
+### Documentation
+
+- Прогон на чистом Obsidian
+
+### Features
+
+- Правила .stignore для Syncthing
+- Agent Workspace — новое имя и пользовательский README
+- Vault-paths.md → vault-config.md, ключи dashboard/tasks_legend/work_email
+- Поднять дельту snoozed-task из vault
+- Weekly-review читает dashboard и work_email из vault-config
+- Monthly-review на vault-config и ключ tasks_legend
+- Obsidian-vault описывает vault-config и short-answer
+- Obsidian-vault — правила git в вольте и восстановление данных
+- Поднять дельту learn и first-task-do, учесть симлинки
+- Weekly-report на report_day, направления и обязательное weekly-review
+- New-task — директивы, проектные задачи, вставка в начало по умолчанию
+- Worklog — быстрые задачи, реальное время из Bash, полный путь лога
+- Close-task синхронизирует projects.md, list-tasks исключает бэклог
+- Удалить base-sync без замены
 
 ## 0.1.0
 
