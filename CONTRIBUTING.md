@@ -109,13 +109,17 @@ Guard приватности — не формальность: базовые �
 ## Релиз
 
 ```bash
-node scripts/release.mjs 0.2.0   # версия в пяти файлах
+node scripts/release.mjs 0.3.0   # версия в пяти файлах
 npm run changelog                 # CHANGELOG.md из conventional commits
-git commit -am "chore(release): 0.2.0"
-git tag v0.2.0 && git push --follow-tags
+git commit -am "chore(release): 0.3.0"
+git tag -a v0.3.0 -m v0.3.0 && git push --follow-tags
 ```
 
+**Тег обязан быть аннотированным** (`-a`): `--follow-tags` отправляет только аннотированные теги, а lightweight (`git tag v0.3.0`) молча останется локальным — push пройдёт успешно, но workflow не запустится и релиза не будет. Проверить, что тег доехал: `git ls-remote --tags origin`.
+
 Тег запускает `.github/workflows/release.yml`, который создаёт GitHub Release. Репозиторий до-единичный: breaking changes едут минорным бампом с явной пометкой BREAKING в `CHANGELOG.md`.
+
+`npm run changelog` перегенерирует `CHANGELOG.md` целиком из истории коммитов, а не дописывает к нему. Править файл руками бессмысленно — следующий релиз затрёт правку; развёрнутый текст для людей место в описании GitHub Release, а не в `CHANGELOG.md`.
 
 ## Что оставить пользователю
 
