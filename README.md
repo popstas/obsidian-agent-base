@@ -2,6 +2,43 @@
 
 🇬🇧 English · 🇷🇺 [Русский](README_ru.md)
 
+## Set it up with an agent
+
+You don't need to download anything by hand or know what git is. All you need is an AI agent that can work on your computer — Claude Code, Codex, Cursor, or another one.
+
+Open the agent, and paste this text in as your first message:
+
+```text
+I want a workspace for my tasks and notes in Obsidian, based on this project:
+https://github.com/popstas/obsidian-agent-workspace
+
+I don't know git and I'm not comfortable with the command line. Do the technical
+parts yourself and explain in plain words what is happening and what I need to
+click.
+
+1. Download this project into a separate folder on my computer. Ask me where to
+   put it and suggest a sensible default.
+2. From there on, follow the INTEGRATION.md file inside that folder — it is
+   written for you, not for me. Go through it in order.
+3. Check that Obsidian is installed, install the Obsidian plugins with the
+   script in the scripts folder, and walk me step by step through opening the
+   folder as a vault.
+4. If there are commands only I can run, give them to me one at a time and wait
+   until I confirm each one.
+5. Ask me the setup questions from INTEGRATION.md — about my projects, tasks,
+   notes and the tools I work with — and adapt the workspace to my answers.
+6. At the very end, remove the demo content with the demo-content-delete skill.
+
+Ask me before deleting or overwriting anything. If a step can't be verified,
+stop and tell me instead of assuming it worked.
+```
+
+The agent downloads the project, asks its questions, adapts the files, and tells you what it changed. Setup usually fits in one session.
+
+Already comfortable with git? `git clone https://github.com/popstas/obsidian-agent-workspace my-workspace`, start the agent inside the folder, and paste the same prompt from step 2 on. Windows, connecting to an existing vault, and the "skills only" mode are covered in [INTEGRATION.md](INTEGRATION.md).
+
+## What this is
+
 A ready-made core workflow for keeping an Obsidian vault with an agent — **any** agent: Claude Code, Codex, Cursor, and others — with nobody's personal details baked in. Tasks live in `tasks.md`, your working journal in `Log/`, notes in `Notes/`, reports in `Log/Reports/`.
 
 Agent Workspace is the main workspace an AI agent looks at to see your tasks, projects, notes, and work history. Think of it as a **superproject**: it knows about your other projects and helps you carry out complex work, even when that means gathering information or making changes in several places at once.
@@ -401,17 +438,7 @@ Skills can be adapted to how a particular person or company works: folder names,
 
 ## First run
 
-> **Arrived from GitHub with nothing installed yet?**
->
-> ```bash
-> git clone https://github.com/popstas/obsidian-agent-workspace my-workspace
-> ```
->
-> Open the `my-workspace` folder as a vault in Obsidian, start an agent session in it,
-> and say "adapt this vault to me".
->
-> Windows, installing the Obsidian plugins, and the two other modes — into an existing
-> vault, and skills only in Codex or Cursor — are covered in [INTEGRATION.md](INTEGRATION.md).
+> **Nothing installed yet?** The setup prompt is at the [top of this README](#set-it-up-with-an-agent).
 
 If you're reading this README inside Obsidian, an agent is most likely already setting the workspace up by following `INTEGRATION.md`.
 
