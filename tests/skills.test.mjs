@@ -8,8 +8,8 @@ import { REPO, SKILLS_LIST, skillNames, frontmatter, renderSkillsList } from '..
 const EXPECTED = [
   'close-task', 'decompose', 'demo-content-delete', 'first-task-do',
   'learn', 'list-tasks', 'monthly-review', 'new-task', 'obsidian-vault',
-  'snoozed-review', 'snoozed-task', 'vault-connect', 'weekly-report',
-  'weekly-review', 'worklog',
+  'snoozed-review', 'snoozed-task', 'task-prepare', 'vault-connect',
+  'weekly-report', 'weekly-review', 'worklog',
 ];
 
 test('состав скиллов совпадает с ожидаемым', () => {
