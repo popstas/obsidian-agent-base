@@ -16,7 +16,7 @@
 
 Операции с задачами идут через скиллы, а не через ручную правку файлов: они держат лестницу, зеркалирование проектов и логи согласованными. Полный список с описаниями — [[Skills list]].
 
-- Ежедневно: `new-task`, `close-task`, `worklog`, `first-task-do`, `list-tasks`, `decompose`
+- Ежедневно: `new-task`, `close-task`, `worklog`, `task-prepare`, `first-task-do`, `list-tasks`, `decompose`
 - Отложенное: `snoozed-task`, `snoozed-review`
 - Ревью: `weekly-review` / `weekly-report`, `monthly-review`
 - Vault: `obsidian-vault`, `learn`

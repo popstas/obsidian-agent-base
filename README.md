@@ -91,7 +91,7 @@ Put it in future tasks.
 Snooze it until September.
 ```
 
-Commands: `/new-task`, or `/snoozed-task` for one that waits until a given date
+Commands: `/new-task` (worth following with `/task-prepare`, which researches the task while it waits its turn), or `/snoozed-task` for one that waits until a given date
 
 ### Work on a task
 
@@ -111,7 +111,7 @@ Draft the deliverable for this task using the related projects.
 
 The agent gathers whatever context it can find, proposes a plan, and separates what it can finish by itself from the steps that need a human.
 
-Commands: `/first-task-do` to pick up the first task on the list, `/decompose` to break one down into steps
+Commands: `/task-prepare` to research one task and write the findings into a note, `/first-task-do` to do that for the first task on the list, `/decompose` to break one down into steps
 
 ### Record progress
 
@@ -156,7 +156,7 @@ Command: `/close-task`
 4. Write meaningful progress into the daily log.
 5. Close finished tasks with a short summary.
 
-As commands: `/list-tasks` → `/first-task-do` → `/worklog` → `/close-task`
+As commands: `/list-tasks` → `/task-prepare` (or `/first-task-do`) → `/worklog` → `/close-task`
 
 ### Every week
 
@@ -416,6 +416,7 @@ Every skill is a slash command named after itself:
 * `/new-task` to add a task, `/close-task` to close one;
 * `/worklog` to record progress in the daily log;
 * `/list-tasks` to sort out the day's work;
+* `/task-prepare` to research a task before doing it, `/task-prepare all` for every task not researched yet;
 * `/first-task-do` to start the first task on the list;
 * `/decompose` to break a large task into steps;
 * `/snoozed-task` and `/snoozed-review` to snooze a task and to go through the ones that came due;
