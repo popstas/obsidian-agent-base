@@ -31,8 +31,10 @@ files/tasks.json
 .obsidian/plugins/obsidian-icon-folder/*
 !.obsidian/plugins/obsidian-icon-folder/data.json
 
-# Приватные рабочие материалы автора (планы/спеки/SDD) — не для публичного репо.
+# Приватные рабочие материалы автора (планы/спеки/SDD, рабочий список задач
+# репозитория) — не для публичного репо.
 docs/superpowers/
+docs/TODO.md
 .superpowers/
 
 # Проектно-специфичные приватные термины для guard-теста (см. .privacy-terms.example)
